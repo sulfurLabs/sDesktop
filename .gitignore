@@ -1,0 +1,4 @@
+include/libc/
+build/
+build-linux/
+.DS_Store

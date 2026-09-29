@@ -1,0 +1,124 @@
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Copyright (c) 2026 sulfurLabs
+#
+# PROJECT: sDesktop
+# FILE: Makefile.linux
+#
+
+CC := gcc
+CFLAGS := -Wall -Wextra -O2 -g -std=gnu11 -D__linux__ -Iinclude
+LDFLAGS := -static
+
+BUILD := build-linux
+
+OBJS := $(BUILD)/main.o              \
+        $(BUILD)/log.o               \
+        $(BUILD)/display/comp.o      \
+        $(BUILD)/display/fb_linux.o  \
+        $(BUILD)/input/mouse.o
+
+BIN := $(BUILD)/sDesktop-linux
+
+all: $(BIN)
+
+$(BIN): $(OBJS)
+	$(CC) $(LDFLAGS) $(OBJS) -o $@
+	@echo "linux desktop binary: $@"
+
+$(BUILD)/%.o: sDesktop/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# we use vmlinuz so we dont need to get linux kernel, compile it and etc
+QEMU    ?= qemu-system-x86_64
+KERNEL  ?= /usr/lib/modules/$(shell uname -r)/vmlinuz
+INITRD  := $(BUILD)/initramfs.cpio.gz
+VMFLAGS := -display gtk
+# usb mouse so /dev/input/mice exists in the vm or anything else
+USBMOUSE := -usb -device usb-mouse
+
+# i dont want to fetch limine just here again
+# so i use Limine from sulfurOS
+LIMINE_DIR ?= ~/osdev/sulfurLabs/sulfurOSgcc/include/limine
+LIMINE_BIN ?= limine
+ISODIR := $(BUILD)/iso-root
+ISO := $(BUILD)/sDesktop-linux.iso
+
+# we dont have SystemD or whatever so we need a own init called badinit
+# cuz its bad
+INIT_SRC := init/badinit.c
+INIT_BIN := $(BUILD)/sDesktop-init
+
+$(INIT_BIN): $(INIT_SRC)
+	$(CC) -Wall -Wextra -O2 -static -o $@ $<
+
+# if you want to add stuff, good luck to find all those modules
+# it was a horror to find those and get it in the right order
+# in the badinit 
+KVER := $(shell uname -r)
+KMOD := /usr/lib/modules/$(KVER)/kernel
+MODS := drivers/input/mouse/psmouse.ko \
+        drivers/i2c/i2c-mux.ko \
+        drivers/i2c/i2c-smbus.ko \
+        drivers/i2c/busses/i2c-i801.ko \
+        drivers/input/mouse/elan_i2c.ko \
+        drivers/hid/i2c-hid/i2c-hid.ko \
+        drivers/hid/i2c-hid/i2c-hid-acpi.ko \
+        drivers/hid/hid-multitouch.ko
+
+# first the badinit starts which loads drivers/modules
+# then badinit starts the desktop and everything should load and work
+$(BUILD)/initramfs.cpio.gz: $(BIN) $(INIT_BIN)
+	rm -rf $(BUILD)/rootfs
+	@mkdir -p $(BUILD)/rootfs/lib/input
+	cp $(BIN) $(BUILD)/rootfs/sDesktop
+	cp $(INIT_BIN) $(BUILD)/rootfs/init
+
+	@for m in $(MODS); do \
+		zstd -d -c $(KMOD)/$$m.zst > $(BUILD)/rootfs/lib/input/$$(basename $$m) 2>/dev/null \
+		|| echo "warn: no $$m for $(KVER)"; \
+	done
+
+	ls $(BUILD)/rootfs/lib/input/
+	cd $(BUILD)/rootfs && find . -print0 | cpio -0 -o -H newc 2>/dev/null | gzip -9 > ../initramfs.cpio.gz
+
+	@echo "initramfs: $(INITRD)"
+
+run: $(BIN) $(BUILD)/initramfs.cpio.gz
+	$(QEMU) -machine q35 -m 512 -vga std -enable-kvm      \
+		-kernel $(KERNEL)                                   \
+		-initrd $(INITRD)                                   \
+		-append "quiet console=tty1 vga=0x31B nomodeset"    \
+		$(VMFLAGS) $(USBMOUSE)
+
+run-nodisplay: $(BIN) $(BUILD)/initramfs.cpio.gz
+	$(QEMU) -machine q35 -m 512 -vga std -enable-kvm      \
+		-kernel $(KERNEL)                                   \
+		-initrd $(INITRD)                                   \
+		-append "console=ttyS0 vga=0x31B nomodeset"         \
+		-nographic $(USBMOUSE)
+
+clean:
+	rm -rf $(BUILD)
+
+# simply builds the iso 
+iso: $(BIN) $(BUILD)/initramfs.cpio.gz
+	rm -rf $(ISODIR)
+	mkdir -p $(ISODIR)/boot $(ISODIR)/EFI/BOOT
+	cp $(KERNEL) $(ISODIR)/boot/vmlinuz
+	cp $(BUILD)/initramfs.cpio.gz $(ISODIR)/boot/initramfs.cpio.gz
+	cp limine.conf $(ISODIR)/boot/limine.conf
+	cp $(LIMINE_DIR)/limine-bios.sys $(LIMINE_DIR)/limine-bios-cd.bin $(LIMINE_DIR)/limine-uefi-cd.bin $(ISODIR)/boot/
+	cp $(LIMINE_DIR)/BOOTX64.EFI $(ISODIR)/EFI/BOOT/
+
+	xorriso -as mkisofs -b boot/limine-bios-cd.bin \
+		-no-emul-boot -boot-load-size 4 -boot-info-table \
+		--efi-boot boot/limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		-o $(ISO) $(ISODIR)
+	$(LIMINE_BIN) bios-install $(ISO)
+	@echo $(ISO)
+
+.PHONY: all run run-nodisplay clean iso
