@@ -178,17 +178,18 @@ void createRect(
 ){
     if (!comp) return;
     if (width <= 0 || height <= 0) return;
+    if (x < 0) {  width += x;  x = 0;  }
+    if (y < 0) {  height += y;  y = 0;  }
+    if (x + width > comp->fb.width) width = comp->fb.width - x;
+    if (y + height > comp->fb.height) height = comp->fb.height - y;
+    if (width <= 0 || height <= 0) return;
 
+    //if we write row by row instead of pixel per pixel its faster
     for (int py = 0; py < height; py++)
     {
-        for (int px = 0; px < width; px++)
-        {
-            putPixel(
-                comp,
-                x + px,
-                y + py,
-                color
-            );
-        }
+        unsigned int *row = comp->fb.back + (size_t)(y + py) * comp->fb.width + x;
+        for (int px = 0; px < width; px++) row[px] = color;
     }
+
+    CompDamage(comp, x, y, width, height);
 }

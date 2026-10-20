@@ -11,6 +11,7 @@
 #define FB_H 1
 
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef __sulfur__
     #include <sys/fb.h>
@@ -40,5 +41,33 @@ void fbPutPixel(fb_backend_t *fb, int x, int y, uint32_t color);
 //upload one region from shadow/backbuffer
 void fbFlush(fb_backend_t *fb, int x, int y, int w, int h);
 int fbPoll(fb_backend_t *fb);
+
+//vram is uncached so our bytewise memcpy crawls there
+// there is sse in sulfur but uhh i had problems and this is just simpler for now
+static inline void fbCopyToVram(void *dstV, const void *srcV, size_t bytes)
+{
+    unsigned char *dst = (unsigned char *)dstV;
+    const unsigned char *src = (const unsigned char *)srcV;
+
+    while (bytes && ((uintptr_t)dst & 7))
+    {
+        *dst++ = *src++;
+        bytes--;
+    }
+
+    uint64_t *d = (uint64_t *)dst;
+    const uint64_t *s = (const uint64_t *)src;
+    while (bytes >= 8)
+    {
+        *d++ = *s++;
+        bytes -= 8;
+    }
+
+    dst = (unsigned char *)d;
+    src = (const unsigned char *)s;
+
+    //the rest goes normally
+    while (bytes--) *dst++ = *src++;
+}
 
 #endif

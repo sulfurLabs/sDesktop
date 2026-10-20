@@ -13,9 +13,11 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #ifndef SYS_init_module
-#   define SYS_init_module 175 // idk this number was in some forum lol
+#   define SYS_init_module 175
 #endif
 
 static void put(const char *s)
@@ -36,6 +38,9 @@ static const char *mods[] =
     "/lib/input/i2c-hid.ko",
     "/lib/input/i2c-hid-acpi.ko", // modern pads talk hid over i2c or smth
     "/lib/input/hid-multitouch.ko", //multitouch like my lenovo laptop has
+    "/lib/input/atkbd.ko", //ps2 keyboards like qemu has
+    "/lib/input/usbhid.ko",
+    "/lib/input/mousedev.ko", //ps2 fallback needs this
     0
 };
 
@@ -79,8 +84,10 @@ static void insmod(const char *path)
 
     put("init: loading ");
     put(path);
-    if (
-        syscall(SYS_init_module, img, st.st_size, "" //empty strings for no options also idk which options i would need
+    if
+        (
+            //empty strings for no options also idk which options i would need
+            syscall(SYS_init_module, img, st.st_size, ""
         ) != 0
     ){
         put(" failed\n");
@@ -105,13 +112,31 @@ int main(void)
         "/sDesktop",
         0
     };
-    execv("/sDesktop", argv);
 
-    //if this exits then we have a problem
-    //
-    put("init: exec failed \n");
+    for (;;)
+    {
+        pid_t pid = fork();
 
-    for (;;) sleep(1000);
+        if (pid == 0)
+        {
+            execv("/sDesktop", argv);
+
+            put("init: exec failed \n");
+            _exit(1);
+        }
+
+        if (pid < 0)
+        {
+            put("init: fork failed \n");
+            sleep(5);
+            continue;
+        }
+
+        int status = 0;
+        waitpid(pid, &status, 0);
+        put("init: desktop is gone, restarting\n");
+        sleep(1);
+    }
 
     return 0;
 }

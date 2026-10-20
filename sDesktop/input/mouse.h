@@ -11,6 +11,7 @@
 #define MOUSE_H 1
 
 #include "../display/comp.h"
+#include "event.h"
 
 typedef struct
 {
@@ -23,10 +24,9 @@ typedef struct
     int y;
 } cursor_t;
 
+int PollMouse(event_queue_t *q);
 int OpenMouse();
 void CloseMouse();
-//if it errors -1 it means theres no mouse device/ it dissapeared
-int ReadMouse(int *MoveX, int *MoveY);
 void CursorMove(cursor_t *c, int MoveX, int MoveY, int Width, int Height);
 void DrawMouse(compositor_t *comp, const cursor_t *c);
 

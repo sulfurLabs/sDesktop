@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // Copyright (c) 2026 sulfurLabs
-// 
+//
 // PROJECT: sDesktop
 // FILE: main.c
 //
@@ -37,13 +37,16 @@ int main(void)
     //if (CompHeight(&comp) <= 70) CompSetSize(&comp, CompWidth(&comp), 768);
 
     //init mouse, cuz desktop without mouse?? eh
+    // keyboard too, same thing
     cursor_t cursor;
     int haveMouse = 0;
+    int haveKeyboard = 0;
 
-    for (int i = 0; i < 30 && !haveMouse; i++)
+    for (int i = 0; i < 30 && (!haveMouse || !haveKeyboard); i++)
     {
-        haveMouse = OpenMouse();
-        if (!haveMouse) usleep(100000);
+        if (!haveMouse) haveMouse = OpenMouse();
+        if (!haveKeyboard) haveKeyboard = OpenKeyboard();
+        if (!haveMouse || !haveKeyboard) usleep(100000);
     }
 
     if (haveMouse == 0)
@@ -51,12 +54,27 @@ int main(void)
         Log("could not open mouse, continuing without it");
     }
 
+    if (haveKeyboard == 0)
+    {
+        Log("could not open keyboard, continuing without it");
+    }
+
+    event_queue_t events;
+    EventQueueInit(&events);
+
+    printf(
+        "input: mouse %s, keyboard %s\n",
+        haveMouse ? "ok" : "missing",
+        haveKeyboard ? "ok" : "missing"
+    );
+
     cursor.x = CompWidth(&comp) / 2;
     cursor.y = CompHeight(&comp) / 2;
 
     //this helps a lot on real hardware cuz printf would be overdrawn by graphics
     unsigned int bg = haveMouse ? 0x000080ff : 0x00800000;
     int noMouseTick = 0;
+    int noKbdTick = 0;
 
     DesktopDraw: {
         //full screen draw at begin
@@ -81,14 +99,13 @@ int main(void)
         CompRun(&comp);
     }
 
+    int quit = 0;
+
     DesktopLoop: {
         //this will be the dirty system
         // or damage selection whatever
-        for (;;)
+        for (;!quit;)
         {
-            int MoveX = 0;
-            int MoveY = 0;
-
             if (!haveMouse)
             {
                 if (++noMouseTick >= 120) // 2 secs
@@ -105,8 +122,18 @@ int main(void)
                 }
             }
 
-            int r = haveMouse ? ReadMouse(&MoveX, &MoveY) : 0;
-            if (r < 0)
+            if (!haveKeyboard)
+            {
+                if (++noKbdTick >= 120) //same as mouse
+                {
+                    noKbdTick = 0;
+                    haveKeyboard = OpenKeyboard();
+                    if (haveKeyboard) Log("keyboard showed up late, nice");
+                }
+            }
+
+            //all input lands here first
+            if (haveMouse && PollMouse(&events) < 0)
             {
                 //if the mouse is gone
                 // we restart scanning
@@ -117,22 +144,52 @@ int main(void)
 
                 CompDamage(&comp, 0, 0, CompWidth(&comp), CompHeight(&comp));
             }
-            else if (r)
+
+            if (haveKeyboard && PollKeyboard(&events) < 0)
             {
-                if (MoveX || MoveY)
+                CloseKeyboard();
+                haveKeyboard = 0;
+                noKbdTick = 0;
+                Log("keyboard is gone, scanning again");
+            }
+
+            event_t ev;
+            while (EventPop(&events, &ev))
+            {
+                if (ev.type == EV_MOUSE_MOVE)
                 {
                     //the old cursor pos needs a redraw too
                     CompDamage(&comp, cursor.x, cursor.y, 12, 18);
 
                     CursorMove(
                         &cursor,
-                        MoveX,
-                        MoveY,
+                        ev.x,
+                        ev.y,
                         CompWidth(&comp),
                         CompHeight(&comp)
                     );
 
                     CompDamage(&comp, cursor.x, cursor.y, 12, 18);
+                }
+                else if (ev.type == EV_MOUSE_BUTTON && ev.value)
+                {
+                    //click = booooop :3
+                    printf("boop, %d\n", ev.code);
+
+                    //if the background flips the buttons work
+                    if (ev.code == 1)
+                    {
+                        bg = (bg == 0x000080ff) ? 0x0000aa55 : 0x000080ff;
+                        CompDamage(&comp, 0, 0, CompWidth(&comp), CompHeight(&comp));
+                    }
+                }
+                else if (ev.type == EV_KEY)
+                {
+                    //beep beeeep
+                    printf("beeep, %d %s\n", ev.code, ev.value ? "down" : "up");
+
+                    //we quit with esc in linux
+                    if (ev.code == 1 && ev.value) quit = 1;
                 }
             }
 

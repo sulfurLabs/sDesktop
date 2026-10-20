@@ -77,7 +77,7 @@ void fbFlush(fb_backend_t *fb, int x, int y, int w, int h)
     // one full single copy
     if (x == 0 && w == fb->width && fb->stride == fb->width)
     {
-        memcpy(
+        fbCopyToVram(
             fb->pixels + (size_t)y * fb->stride,
             fb->back + (size_t)y * fb->width,
             (size_t)h * fb->width * 4
@@ -88,7 +88,7 @@ void fbFlush(fb_backend_t *fb, int x, int y, int w, int h)
 
     for (int row = 0; row < h; row++)
     {
-        memcpy(
+        fbCopyToVram(
             fb->pixels + (y + row) * fb->stride + x,
             fb->back + (y + row) * fb->width + x,
             (size_t)w * 4

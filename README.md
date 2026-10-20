@@ -13,3 +13,5 @@ i want to start from 0 again and focuse more on performance
 and having a unified event system
 
 also it didnt work on linux but sDesktop works on linux
+also i try a new code style which is simpler for me lol
+also i got more lazy so if smth looks ugly its cuz lazy

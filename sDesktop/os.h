@@ -16,6 +16,7 @@
     #include <sys/input.h>
     #include <fcntl.h>
     #include <unistd.h>
+    #include <time.h>
 
     #define GREETER "sulfurOS" //the greeting message
 
@@ -34,8 +35,8 @@
     #define GREETER "Linux"
 
     #define FB_DEV "/dev/fb0"
-    #define MS_DEV "/dev/input/mice"
-    #define KB_DEV ""
+    #define MS_DEV "/dev/input/mice" //event
+    #define KB_DEV ""//also event
 /*
     static inline int OssOpenKeyboard(void)
     {

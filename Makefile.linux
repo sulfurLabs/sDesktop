@@ -17,7 +17,8 @@ OBJS := $(BUILD)/main.o              \
         $(BUILD)/log.o               \
         $(BUILD)/display/comp.o      \
         $(BUILD)/display/fb_linux.o  \
-        $(BUILD)/input/mouse.o
+        $(BUILD)/input/mouse.o       \
+        $(BUILD)/input/keyboard.o
 
 BIN := $(BUILD)/sDesktop-linux
 
@@ -35,9 +36,10 @@ $(BUILD)/%.o: sDesktop/%.c
 QEMU    ?= qemu-system-x86_64
 KERNEL  ?= /usr/lib/modules/$(shell uname -r)/vmlinuz
 INITRD  := $(BUILD)/initramfs.cpio.gz
-VMFLAGS := -display gtk
+VMFLAGS := -display gtk,gl=off
+# gl=off cuz accelerated gtk stays black on some machines
 # usb mouse so /dev/input/mice exists in the vm or anything else
-USBMOUSE := -usb -device usb-mouse
+USBMOUSE := -device -usb
 
 # i dont want to fetch limine just here again
 # so i use Limine from sulfurOS
@@ -56,7 +58,7 @@ $(INIT_BIN): $(INIT_SRC)
 
 # if you want to add stuff, good luck to find all those modules
 # it was a horror to find those and get it in the right order
-# in the badinit 
+# in the badinit
 KVER := $(shell uname -r)
 KMOD := /usr/lib/modules/$(KVER)/kernel
 MODS := drivers/input/mouse/psmouse.ko \
@@ -66,7 +68,10 @@ MODS := drivers/input/mouse/psmouse.ko \
         drivers/input/mouse/elan_i2c.ko \
         drivers/hid/i2c-hid/i2c-hid.ko \
         drivers/hid/i2c-hid/i2c-hid-acpi.ko \
-        drivers/hid/hid-multitouch.ko
+        drivers/hid/hid-multitouch.ko \
+        drivers/input/keyboard/atkbd.ko \
+        drivers/hid/usbhid/usbhid.ko \
+        drivers/input/mousedev.ko
 
 # first the badinit starts which loads drivers/modules
 # then badinit starts the desktop and everything should load and work
@@ -87,14 +92,17 @@ $(BUILD)/initramfs.cpio.gz: $(BIN) $(INIT_BIN)
 	@echo "initramfs: $(INITRD)"
 
 run: $(BIN) $(BUILD)/initramfs.cpio.gz
-	$(QEMU) -machine q35 -m 512 -vga std -enable-kvm      \
-		-kernel $(KERNEL)                                   \
-		-initrd $(INITRD)                                   \
-		-append "quiet console=tty1 vga=0x31B nomodeset"    \
+	$(QEMU) -machine q35 -m 512 -vga std -enable-kvm              \
+		-kernel $(KERNEL)                                         \
+		-initrd $(INITRD)                                         \
+		-append "console=tty1 console=ttyS0 vga=0x31B nomodeset vt.global_cursor_default=0"  \
+		-serial stdio                                             \
 		$(VMFLAGS) $(USBMOUSE)
+# sooo i added quiet in -append and it didnt show smth then
+# i removed it and it works now so dont add it
 
 run-nodisplay: $(BIN) $(BUILD)/initramfs.cpio.gz
-	$(QEMU) -machine q35 -m 512 -vga std -enable-kvm      \
+	$(QEMU) -machine q35 -m 512 -vga std -enable-kvm        \
 		-kernel $(KERNEL)                                   \
 		-initrd $(INITRD)                                   \
 		-append "console=ttyS0 vga=0x31B nomodeset"         \
@@ -103,7 +111,7 @@ run-nodisplay: $(BIN) $(BUILD)/initramfs.cpio.gz
 clean:
 	rm -rf $(BUILD)
 
-# simply builds the iso 
+# simply builds the iso
 iso: $(BIN) $(BUILD)/initramfs.cpio.gz
 	rm -rf $(ISODIR)
 	mkdir -p $(ISODIR)/boot $(ISODIR)/EFI/BOOT

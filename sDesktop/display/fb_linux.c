@@ -8,6 +8,7 @@
 //
 
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -76,6 +77,19 @@ int fbInit(fb_backend_t *fb)
     if (!fb->back) return 0;
 
     memset(fb->back, 0, (size_t)fb->width * fb->height * 4);
+
+    //if the screen is black we can still see if its running
+    printf(
+        "fb %dx%d bpp %d stride %d rgb %d/%d/%d\n",
+        fb->width,
+        fb->height,
+        fb->bpp,
+        fb->stride,
+
+        fb->red_offset,
+        fb->green_offset,
+        fb->blue_offset
+    );
 
     return 1;
 }
@@ -162,7 +176,7 @@ void fbFlush(fb_backend_t *fb, int x, int y, int w, int h)
         //this is one full widht single copy
         if (x == 0 && w == fb->width && fb->stride == fb->width)
         {
-            memcpy(
+            fbCopyToVram(
                 (uint8_t *)fb->pixels + (size_t)y * (size_t)fb->stride * 4,
                 fb->back + (size_t)y * fb->width,
                 (size_t)h * fb->width * 4
@@ -173,12 +187,37 @@ void fbFlush(fb_backend_t *fb, int x, int y, int w, int h)
 
         for (int row = 0; row < h; row++)
         {
-            memcpy(
+            fbCopyToVram(
                 (uint8_t *)fb->pixels + (size_t)(y + row) * (size_t)fb->stride * 4 + (size_t)x * 4,
                 fb->back + (y + row) * fb->width + x,
                 (size_t)w * 4
             );
         }
+        return;
+    }
+
+    //qemu gives 24bits
+    if (fb->bpp == 24)
+    {
+        for (int row = 0; row < h; row++)
+        {
+            uint8_t *dst = (uint8_t *)fb->pixels + (size_t)(y + row) * (size_t)fb->stride * (size_t)fb->pixel_bytes;
+            unsigned int *src = fb->back + (y + row) * fb->width + x;
+
+            for (int col = 0; col < w; col++)
+            {
+                uint32_t color = src[col];
+                uint32_t r = (color >> 16) & 0xff;
+                uint32_t g = (color >> 8) & 0xff;
+                uint32_t b = color & 0xff;
+                uint32_t v = (r << fb->red_offset) | (g << fb->green_offset) | (b << fb->blue_offset);
+
+                dst[(size_t)col * 3] = (uint8_t)v;
+                dst[(size_t)col * 3 + 1] = (uint8_t)(v >> 8);
+                dst[(size_t)col * 3 + 2] = (uint8_t)(v >> 16);
+            }
+        }
+
         return;
     }
 

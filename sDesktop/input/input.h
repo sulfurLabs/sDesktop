@@ -9,5 +9,7 @@
 
 #pragma once
 
-//should include mouse and keyboard then
+//all input in one place so main doesnt care
+#include "event.h"
 #include "mouse.h"
+#include "keyboard.h"

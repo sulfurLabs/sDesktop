@@ -7,8 +7,8 @@
 # FILE: Makefile
 #
 
-CC   := gcc
-LD   := ld
+CC   := x86_64-elf-gcc
+LD   := x86_64-elf-ld
 LIBC ?= include/libc
 
 OS_PATH     ?= ~/osdev/sulfurLabs/sulfurOSgcc/
@@ -29,7 +29,8 @@ OBJS := build/main.o \
         build/log.o \
         build/display/comp.o \
         build/display/fb_sulfur.o \
-        build/input/mouse.o
+        build/input/mouse.o \
+        build/input/keyboard.o
 
 all: clean $(LIBC)/build/crt0.o dirs build/sDesktop.elf run
 
@@ -63,7 +64,7 @@ build/sDesktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a
 	@./tools/buildimage.sh
 
 	@rm -f $(ROOTFS_PATH)/sDesktop.elf
-	@cp build/sDesktop.elf $(ROOTFS_PATH)desktop.elf
+	@cp build/sDesktop.elf $(ROOTFS_PATH)sDesktop.elf
 	@cp build/sDesktop.cpio $(OS_DSK_PATH)rdh/user_id/extend/sDesktop.cpio
 
 
@@ -72,12 +73,13 @@ build/log.o:                      sDesktop/log.c                  ; $(CC) $(CFLA
 build/display/comp.o:             sDesktop/display/comp.c         ; $(CC) $(CFLAGS) -c $< -o $@
 build/display/fb_sulfur.o:        sDesktop/display/fb_sulfur.c    ; $(CC) $(CFLAGS) -c $< -o $@
 build/input/mouse.o:              sDesktop/input/mouse.c          ; $(CC) $(CFLAGS) -c $< -o $@
+build/input/keyboard.o:           sDesktop/input/keyboard.c       ; $(CC) $(CFLAGS) -c $< -o $@
 
 $(LIBC)/build/crt0.o $(LIBC)/build/libc.a:
 	$(MAKE) -C $(LIBC)
 
 clean:
 	rm -f build/*.o build/display/*.o build/input/*.o build/sDesktop.elf
-	@$(MAKE) -C $(LIBC) clean
+	@if [ -d "$(LIBC)" ]; then $(MAKE) -C $(LIBC) clean; fi
 
 .PHONY: all clean install run

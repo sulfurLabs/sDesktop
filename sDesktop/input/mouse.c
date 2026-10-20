@@ -45,6 +45,7 @@
 static int mousefd = -1;
 static unsigned char packets[3];
 static int packetLen = 0;
+static int lastBtn = 0; //so we only report clicks once
 
 #if defined(__linux__) && !defined(__sulfur__)
     static int mouseIsEvdev = 0;
@@ -77,6 +78,7 @@ int OpenMouse()
         mouseIsEvdev = 0;
         evLen = 0;
         packetLen = 0;
+        lastBtn = 0;
         haveAbsX = 0;
         haveAbsY = 0;
 
@@ -139,7 +141,7 @@ int OpenMouse()
     #endif
 }
 
-int ReadMouse(int *MoveX, int *MoveY)
+int PollMouse(event_queue_t *q)
 {
     #if defined(__linux__) && !defined(__sulfur__)
         if (mouseIsEvdev)
@@ -216,12 +218,19 @@ int ReadMouse(int *MoveX, int *MoveY)
                         got = 1;
                     }
                 }
+                else if (ev.type == EV_KEY)
+                {
+                    //linux i dont understand you sometimes....
+                    if (ev.code == BTN_LEFT) EventPushButton(q, 1, ev.value != 0);
+                    else if (ev.code == BTN_RIGHT) EventPushButton(q, 2, ev.value != 0);
+                    else if (ev.code == BTN_MIDDLE) EventPushButton(q, 3, ev.value != 0);
+                    //meyybe we need rest later
+                }
             }
 
             if (!got) return 0;
 
-            *MoveX = dx;
-            *MoveY = dy;
+            EventPushMove(q, dx, dy);
 
             return 1;
         }
@@ -266,6 +275,19 @@ int ReadMouse(int *MoveX, int *MoveY)
             continue;
         }
 
+        int btn = packets[0] & 0x07; // left right middle
+        if (btn != lastBtn)
+        {
+            //only what changed or it spams
+            for (int b = 0; b < 3; b++)
+            {
+                int was = (lastBtn >> b) & 1;
+                int is = (btn >> b) & 1;
+                if (was != is) EventPushButton(q, b + 1, is);
+            }
+            lastBtn = btn;
+        }
+
         dx += (signed char)packets[1];
         dy += -(signed char)packets[2]; //y goes down
         got = 1;
@@ -274,8 +296,7 @@ int ReadMouse(int *MoveX, int *MoveY)
 
     if (!got) return 0;
 
-    *MoveX = dx;
-    *MoveY = dy;
+    EventPushMove(q, dx, dy);
 
     return 1;
 }
@@ -323,6 +344,7 @@ void CloseMouse(void)
 
     mousefd = -1;
     packetLen = 0;
+    lastBtn = 0;
 
     #if defined(__linux__) && !defined(__sulfur__)
         mouseIsEvdev = 0;
