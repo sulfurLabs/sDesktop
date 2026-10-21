@@ -9,6 +9,7 @@
 
 #pragma once
 
+#define DEBUGOUT 0
 #define DPI 144
 #define BILINEAL true
 //#define SCALE 2

@@ -28,6 +28,12 @@
     {
         unsigned long rel[8] = {0};
         unsigned long abs[8] = {0};
+        char name[128] = {0};
+
+        #ifdef EVENT_DEBUG
+            if (ioctl(fd, EVIOCGNAME(sizeof(name)), name) >= 0)
+                printf("reldev: probing %s\n", name);
+        #endif
 
         if (ioctl(fd, EVIOCGBIT(EV_REL, sizeof(rel)), rel) < 0) return 0;
         if (!((rel[0] >> REL_X) & 1UL)) return 0;
@@ -98,6 +104,10 @@ int OpenMouse()
                 if (fd < 0) continue;
 
                 int score = mouseScore(fd);
+
+                #ifdef EVENT_DEBUG
+                    printf("reldev: %s score %d\n", path, score);
+                #endif
 
                 if (score >= 2)
                 {
@@ -190,11 +200,17 @@ int PollMouse(event_queue_t *q)
                     // but eh if i understood correctly those are harder
                     if (ev.code == REL_X)
                     {
+                        #ifdef EVENT_DEBUG
+                            printf("reldev: REL_X %d\n", ev.value);
+                        #endif
                         dx += ev.value;
                         got = 1;
                     }
                     else if (ev.code == REL_Y)
                     {
+                        #ifdef EVENT_DEBUG
+                            printf("reldev: REL_Y %d\n", ev.value);
+                        #endif
                         dy += ev.value;
                         got = 1;
                     }
@@ -320,12 +336,71 @@ void CursorMove(cursor_t *c, int MoveX, int MoveY, int Width, int Height)
 
 void DrawMouse(compositor_t *comp, const cursor_t *c)
 {
-    //TODO:
-    // load from cursor.h custom textures
-    // then in future from images
-    // format        x         y         w   h   c
-    createRect(comp, c->x,     c->y,     12, 18, 0x00000000);
-    createRect(comp, c->x + 1, c->y + 1, 10, 16, 0x00ffffff);
+    //picks the texture + size for the current cursor type
+    const unsigned int *tex;
+    int w;
+    int h;
+
+    if (c->type == CUR_HRESIZE)
+    {
+        tex = HresizeCursor;
+        w = CUR_RESIZE_W;
+        h = CUR_RESIZE_H;
+    }
+    else if (c->type == CUR_VRESIZE)
+    {
+        tex = VresizeCursor;
+        w = CUR_RESIZE_W;
+        h = CUR_RESIZE_H;
+    }
+    else if (c->type == CUR_TLBRRESIZE)
+    {
+        tex = TLBRresizeCursor;
+        w = CUR_RESIZE_W;
+        h = CUR_RESIZE_H;
+    }
+    else if (c->type == CUR_TRBLRESIZE)
+    {
+        tex = TRBLresizeCursor;
+        w = CUR_RESIZE_W;
+        h = CUR_RESIZE_H;
+    }
+    else
+    {
+        tex = NormalCursor;
+        w = CUR_NORMAL_W;
+        h = CUR_NORMAL_H;
+    }
+
+    //draw the texture pixel per pixel
+    //0x00000000 is transparent so we skip it
+    for (int py = 0; py < h; py++)
+    {
+        for (int px = 0; px < w; px++)
+        {
+            unsigned int color = tex[py * w + px];
+            if (color != 0x00000000u) putPixel(comp, c->x + px, c->y + py, color);
+        }
+    }
+}
+
+void MouseSetCursor(cursor_t *c, int type)
+{
+    c->type = type;
+
+    //set the size so the damage rects match the texture
+    if (
+        type == CUR_HRESIZE    || type == CUR_VRESIZE ||
+        type == CUR_TLBRRESIZE || type == CUR_TRBLRESIZE)
+    {
+        c->w = CUR_RESIZE_W;
+        c->h = CUR_RESIZE_H;
+    }
+    else
+    {
+        c->w = CUR_NORMAL_W;
+        c->h = CUR_NORMAL_H;
+    }
 }
 
 int InitMouse(mouse *m)

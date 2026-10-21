@@ -30,7 +30,9 @@ OBJS := build/main.o \
         build/display/comp.o \
         build/display/fb_sulfur.o \
         build/input/mouse.o \
-        build/input/keyboard.o
+        build/input/keyboard.o \
+        build/window/window.o \
+        build/wm/wm.o
 
 all: clean $(LIBC)/build/crt0.o dirs build/sDesktop.elf run
 
@@ -46,6 +48,8 @@ dirs:
 	mkdir -p build
 	mkdir -p build/display
 	mkdir -p build/input
+	mkdir -p build/window
+	mkdir -p build/wm
 
 run:
 	@echo "running OS..."
@@ -74,12 +78,14 @@ build/display/comp.o:             sDesktop/display/comp.c         ; $(CC) $(CFLA
 build/display/fb_sulfur.o:        sDesktop/display/fb_sulfur.c    ; $(CC) $(CFLAGS) -c $< -o $@
 build/input/mouse.o:              sDesktop/input/mouse.c          ; $(CC) $(CFLAGS) -c $< -o $@
 build/input/keyboard.o:           sDesktop/input/keyboard.c       ; $(CC) $(CFLAGS) -c $< -o $@
+build/window/window.o:             sDesktop/window/window.c        ; $(CC) $(CFLAGS) -c $< -o $@
+build/wm/wm.o:                     sDesktop/wm/wm.c                ; $(CC) $(CFLAGS) -c $< -o $@
 
 $(LIBC)/build/crt0.o $(LIBC)/build/libc.a:
 	$(MAKE) -C $(LIBC)
 
 clean:
-	rm -f build/*.o build/display/*.o build/input/*.o build/sDesktop.elf
+	rm -f build/*.o build/display/*.o build/input/*.o build/window/*.o build/wm/*.o build/sDesktop.elf
 	@if [ -d "$(LIBC)" ]; then $(MAKE) -C $(LIBC) clean; fi
 
 .PHONY: all clean install run

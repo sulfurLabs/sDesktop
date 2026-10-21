@@ -11,6 +11,7 @@
 #define MOUSE_H 1
 
 #include "../display/comp.h"
+#include "cursor.h"
 #include "event.h"
 
 typedef struct
@@ -22,6 +23,9 @@ typedef struct
 {
     int x;
     int y;
+    int type; //which cursor texture is used
+    int w;
+    int h;
 } cursor_t;
 
 int PollMouse(event_queue_t *q);
@@ -29,5 +33,6 @@ int OpenMouse();
 void CloseMouse();
 void CursorMove(cursor_t *c, int MoveX, int MoveY, int Width, int Height);
 void DrawMouse(compositor_t *comp, const cursor_t *c);
+void MouseSetCursor(cursor_t *c, int type);
 
 #endif

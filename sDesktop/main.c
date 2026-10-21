@@ -14,6 +14,8 @@
 #include "os.h"
 #include "log.h"
 #include "cfg.h"
+#include "wm/wm.h"
+#include "window/window.h"
 
 int main(void)
 {
@@ -59,6 +61,58 @@ int main(void)
         Log("could not open keyboard, continuing without it");
     }
 
+    wm_t wm;
+    if (!WMInit(&wm, &comp))
+    {
+        Log("could not start wm, continuing without it");
+    }
+
+    //some demo windows
+    window_t *win1 = WMCreateWindow(&wm, 150, 150, 300, 200);
+    window_t *win2 = WMCreateWindow(&wm, 280, 280, 250, 150);
+
+    WindowDrawRect(win1, 0, 0, win1->width, win1->height, 0x002222aa);
+    WindowDrawRect(win1, 0, 0, win1->width, WM_TITLE_HEIGHT, 0x00444488);
+    WindowDrawRect(win1, 0, 0, win1->width, 1, 0x00ffffff);
+    WindowDrawRect(win1, 0, win1->height - 1, win1->width, 1, 0x00ffffff);
+    WindowDrawRect(win1, 0, 0, 1, win1->height, 0x00ffffff);
+    WindowDrawRect(win1, win1->width - 1, 0, 1, win1->height, 0x00ffffff);
+
+    WindowDrawRect(win2, 0, 0, win2->width, win2->height, 0x00aa2222);
+    WindowDrawRect(win2, 0, 0, win2->width, WM_TITLE_HEIGHT, 0x00884444);
+    WindowDrawRect(win2, 0, 0, win2->width, 1, 0x00ffffff);
+    WindowDrawRect(win2, 0, win2->height - 1, win2->width, 1, 0x00ffffff);
+    WindowDrawRect(win2, 0, 0, 1, win2->height, 0x00ffffff);
+    WindowDrawRect(win2, win2->width - 1, 0, 1, win2->height, 0x00ffffff);
+
+    //default cursor
+    MouseSetCursor(&cursor, CUR_NORMAL);
+
+    //bg switching glitched the windows so
+    // now its just one color
+    //TODO:
+    // background
+    unsigned int bg = 0x000080ff;
+    int noMouseTick = 0;
+    int noKbdTick = 0;
+    int quit = 0;
+
+    DesktopDraw: {
+        //full screen draw at begin
+        // just a solid blue background
+        createRect(
+            &comp,
+            0, 0,
+            CompWidth(&comp),
+            CompHeight(&comp),
+            bg
+        );
+
+        WMComposite(&wm);
+        DrawMouse(&comp, &cursor);
+        CompRun(&comp);
+    }
+
     event_queue_t events;
     EventQueueInit(&events);
 
@@ -68,44 +122,16 @@ int main(void)
         haveKeyboard ? "ok" : "missing"
     );
 
-    cursor.x = CompWidth(&comp) / 2;
-    cursor.y = CompHeight(&comp) / 2;
-
-    //this helps a lot on real hardware cuz printf would be overdrawn by graphics
-    unsigned int bg = haveMouse ? 0x000080ff : 0x00800000;
-    int noMouseTick = 0;
-    int noKbdTick = 0;
-
-    DesktopDraw: {
-        //full screen draw at begin
-        // this will be replaced with a background picture later
-        createRect(
-            &comp,
-            0, 0,
-            CompWidth(&comp),
-            CompHeight(&comp),
-            bg
-        );
-
-        createRect(
-            &comp,
-            100, 100,
-            300, 200,
-            0x00ff0000
-        );
-
-        DrawMouse(&comp, &cursor);
-
-        CompRun(&comp);
-    }
-
-    int quit = 0;
-
     DesktopLoop: {
-        //this will be the dirty system
-        // or damage selection whatever
+        #ifdef EVENT_DEBUG
+            int dbgTick = 0;
+        #endif
         for (;!quit;)
         {
+            #ifdef EVENT_DEBUG
+                printf("tick %d\n", ++dbgTick);
+            #endif
+
             if (!haveMouse)
             {
                 if (++noMouseTick >= 120) // 2 secs
@@ -115,7 +141,7 @@ int main(void)
                     if (haveMouse)
                     {
                         Log("mouse showed up late, nice");
-                        bg = 0x000080ff;
+                        //bg = 0x000080ff;
                         //full redraw
                         CompDamage(&comp, 0, 0, CompWidth(&comp), CompHeight(&comp));
                     }
@@ -140,7 +166,7 @@ int main(void)
                 CloseMouse();
                 haveMouse = 0;
                 noMouseTick = 0;
-                bg = 0x00800000;
+                //bg = 0x00800000;
 
                 CompDamage(&comp, 0, 0, CompWidth(&comp), CompHeight(&comp));
             }
@@ -159,7 +185,7 @@ int main(void)
                 if (ev.type == EV_MOUSE_MOVE)
                 {
                     //the old cursor pos needs a redraw too
-                    CompDamage(&comp, cursor.x, cursor.y, 12, 18);
+                    CompDamage(&comp, cursor.x, cursor.y, cursor.w, cursor.h);
 
                     CursorMove(
                         &cursor,
@@ -169,24 +195,20 @@ int main(void)
                         CompHeight(&comp)
                     );
 
-                    CompDamage(&comp, cursor.x, cursor.y, 12, 18);
+                    CompDamage(&comp, cursor.x, cursor.y, cursor.w, cursor.h);
+                    WMHandleInput(&wm, &ev, cursor.x, cursor.y);
                 }
-                else if (ev.type == EV_MOUSE_BUTTON && ev.value)
+                else if (ev.type == EV_MOUSE_BUTTON)
                 {
                     //click = booooop :3
-                    printf("boop, %d\n", ev.code);
+                    //printf("boop, %d\n", ev.code);
 
-                    //if the background flips the buttons work
-                    if (ev.code == 1)
-                    {
-                        bg = (bg == 0x000080ff) ? 0x0000aa55 : 0x000080ff;
-                        CompDamage(&comp, 0, 0, CompWidth(&comp), CompHeight(&comp));
-                    }
+                    WMHandleInput(&wm, &ev, cursor.x, cursor.y);
                 }
                 else if (ev.type == EV_KEY)
                 {
                     //beep beeeep
-                    printf("beeep, %d %s\n", ev.code, ev.value ? "down" : "up");
+                    //printf("beeep, %d %s\n", ev.code, ev.value ? "down" : "up");
 
                     //we quit with esc in linux
                     if (ev.code == 1 && ev.value) quit = 1;
@@ -196,27 +218,14 @@ int main(void)
             if (CompIsDirty(&comp))
             {
                 int x, y, w, h;
-                int ix, iy, ex, ey;
+                //int ix, iy, ex, ey;
 
                 CompDirtyRect(&comp, &x, &y, &w, &h);
 
                 //redraws inside the damage box
                 createRect(&comp, x, y, w, h, bg);
 
-                ix = x > 100 ? x : 100;
-                iy = y > 100 ? y : 100;
-                ex = x + w < 400 ? x + w : 400;
-                ey = y + h < 300 ? y + h : 300;
-
-                if (ex > ix && ey > iy)
-                {
-                    createRect(
-                        &comp,
-                        ix, iy,
-                        ex - ix, ey - iy,
-                        0x00ff0000
-                    );
-                }
+                WMCompositeRegion(&wm, x, y, w, h);
 
                 DrawMouse(&comp, &cursor);
             }

@@ -8,13 +8,16 @@
 //
 
 #include "log.h"
+#include "cfg.h"
 
 #include <stdio.h>
 #include <unistd.h>
 
 void Log(char *msg)
 {
-    printf(":: ");
-    printf("%s", msg);
-    printf("\n");
+    #if DEBUGOUT == 1
+        printf(":: ");
+        printf("%s", msg);
+        printf("\n");
+    #endif
 }

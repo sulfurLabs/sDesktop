@@ -18,7 +18,9 @@ OBJS := $(BUILD)/main.o              \
         $(BUILD)/display/comp.o      \
         $(BUILD)/display/fb_linux.o  \
         $(BUILD)/input/mouse.o       \
-        $(BUILD)/input/keyboard.o
+        $(BUILD)/input/keyboard.o    \
+        $(BUILD)/window/window.o     \
+        $(BUILD)/wm/wm.o
 
 BIN := $(BUILD)/sDesktop-linux
 
@@ -39,11 +41,9 @@ INITRD  := $(BUILD)/initramfs.cpio.gz
 VMFLAGS := -display gtk,gl=off
 # gl=off cuz accelerated gtk stays black on some machines
 # usb mouse so /dev/input/mice exists in the vm or anything else
-USBMOUSE := -device -usb
+USBMOUSE := -usb -device usb-mouse
 
-# i dont want to fetch limine just here again
-# so i use Limine from sulfurOS
-LIMINE_DIR ?= ~/osdev/sulfurLabs/sulfurOSgcc/include/limine
+LIMINE_DIR ?= $(if $(wildcard /usr/share/limine/limine-bios.sys),/usr/share/limine,~/osdev/sulfurLabs/sulfurOSgcc/include/limine)
 LIMINE_BIN ?= limine
 ISODIR := $(BUILD)/iso-root
 ISO := $(BUILD)/sDesktop-linux.iso
@@ -95,7 +95,7 @@ run: $(BIN) $(BUILD)/initramfs.cpio.gz
 	$(QEMU) -machine q35 -m 512 -vga std -enable-kvm              \
 		-kernel $(KERNEL)                                         \
 		-initrd $(INITRD)                                         \
-		-append "console=tty1 console=ttyS0 vga=0x31B nomodeset vt.global_cursor_default=0"  \
+		-append "console=tty1 vga=0x31B"                          \
 		-serial stdio                                             \
 		$(VMFLAGS) $(USBMOUSE)
 # sooo i added quiet in -append and it didnt show smth then
