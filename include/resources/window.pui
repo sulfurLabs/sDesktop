@@ -1,0 +1,34 @@
+Import "config.pui"
+
+SetContext(Window)
+{
+    //defaults
+    SetArg(Window.height, "384")
+    SetArg(Window.width, "1280")
+
+    SetArg(Window.title, "swindow")
+    SetArg(Window.drag.titleth, 20px) //titleth = dragable title from top, height is 20px
+
+    // gets calculated into height and width
+    SetArg(Window.content.area,
+        WindowTitleHeight, // top
+        1px, // right
+        1px, // bottom
+        1px  // left
+    )
+
+    Container(
+        ID("window.decorations"),
+        Style(
+            layout(row),
+            width(fill),
+            height(WindowTitleHeight), // font is 12px, so it leaves us 6px space for 3px up and 3px down
+            bg(WindowTitleColor)
+        )
+    ) {
+        // the Context is Window (SetContext) which stores informations
+        // about the Window like the title or height, width or z-order,
+        // we need the title for window decoration tho so we use Bind()
+        Label(GetArg(Window.title))
+    }
+}

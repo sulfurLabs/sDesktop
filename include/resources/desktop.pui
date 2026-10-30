@@ -1,0 +1,42 @@
+Import "window.pui"
+Import "config.pui"
+
+//the whole screen is one context, the desktop registered it, the
+//taskbar lives here at the bottom edge
+SetContext(Desktop)
+{
+    Container(
+        ID("desktop.background")
+        Style(
+            height(fill),
+            width(fill),
+            bg(Background)
+        )
+    ){
+        //Image(Background)
+    }
+
+    Container(
+        ID("desktop.taskbar")
+        Style(
+            anchor(bottom),
+            height(TaskbarHeight),
+            width(fill),
+            bg(TaskbarBackground)
+        )
+    ){
+        Button(
+            ID("taskbar.button.terminal"),
+            Style(
+                height(TaskbarButtonHeight),
+                bg(rgb(25, 25, 25))
+            )
+        ){
+            OnHover(
+                tooltip("open Terminal"),
+            )
+            Image("/usr/share/applications/terminal.png"),
+            Execute(DefaultTerminal)
+        }
+    }
+}

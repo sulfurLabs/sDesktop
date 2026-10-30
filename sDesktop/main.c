@@ -8,6 +8,10 @@
 //
 
 #include <stdio.h>
+#include <stdlib.h>
+
+#include <pui.h>
+#include "pui.h"
 
 #include "display/comp.h"
 #include "input/input.h"
@@ -72,18 +76,18 @@ int main(void)
     window_t *win2 = WMCreateWindow(&wm, 280, 280, 250, 150);
 
     WindowDrawRect(win1, 0, 0, win1->width, win1->height, 0x002222aa);
-    WindowDrawRect(win1, 0, 0, win1->width, WM_TITLE_HEIGHT, 0x00444488);
     WindowDrawRect(win1, 0, 0, win1->width, 1, 0x00ffffff);
     WindowDrawRect(win1, 0, win1->height - 1, win1->width, 1, 0x00ffffff);
     WindowDrawRect(win1, 0, 0, 1, win1->height, 0x00ffffff);
     WindowDrawRect(win1, win1->width - 1, 0, 1, win1->height, 0x00ffffff);
 
     WindowDrawRect(win2, 0, 0, win2->width, win2->height, 0x00aa2222);
-    WindowDrawRect(win2, 0, 0, win2->width, WM_TITLE_HEIGHT, 0x00884444);
     WindowDrawRect(win2, 0, 0, win2->width, 1, 0x00ffffff);
     WindowDrawRect(win2, 0, win2->height - 1, win2->width, 1, 0x00ffffff);
     WindowDrawRect(win2, 0, 0, 1, win2->height, 0x00ffffff);
     WindowDrawRect(win2, win2->width - 1, 0, 1, win2->height, 0x00ffffff);
+
+    PyritUILoad(&comp, win1);
 
     //default cursor
     MouseSetCursor(&cursor, CUR_NORMAL);
@@ -107,6 +111,8 @@ int main(void)
             CompHeight(&comp),
             bg
         );
+
+        pyrit.Draw(0, 0, CompWidth(&comp), CompHeight(&comp));
 
         WMComposite(&wm);
         DrawMouse(&comp, &cursor);
@@ -224,6 +230,8 @@ int main(void)
 
                 //redraws inside the damage box
                 createRect(&comp, x, y, w, h, bg);
+
+                pyrit.Draw(x, y, w, h);
 
                 WMCompositeRegion(&wm, x, y, w, h);
 

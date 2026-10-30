@@ -27,12 +27,16 @@ LIBC_DIR := include/libc
 
 OBJS := build/main.o \
         build/log.o \
+        build/pui.o \
         build/display/comp.o \
         build/display/fb_sulfur.o \
         build/input/mouse.o \
         build/input/keyboard.o \
         build/window/window.o \
         build/wm/wm.o
+
+PUI_PARSER := PyritUIparser
+PUI_PARSER_LIB := $(PUI_PARSER)/build/libpui-parser.a
 
 all: clean $(LIBC)/build/crt0.o dirs build/sDesktop.elf run
 
@@ -55,10 +59,10 @@ run:
 	@echo "running OS..."
 	cd $(OS_PATH) && make run
 
-build/sDesktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a
+build/sDesktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a $(PUI_PARSER_LIB)
 	@echo "Building sDesktop now..."
-	$(LD) $(LDFLAGS) $(LIBC)/build/crt0.o $(OBJS)  \
-		$(LIBC)/build/libc.a                       \
+	$(LD) $(LDFLAGS) $(LIBC)/build/crt0.o $(OBJS) \
+		$(LIBC)/build/libc.a $(PUI_PARSER_LIB)            \
 		-o $@
 
 	@echo "sDesktop was succesfully built!"
@@ -72,14 +76,18 @@ build/sDesktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a
 	@cp build/sDesktop.cpio $(OS_DSK_PATH)rdh/user_id/extend/sDesktop.cpio
 
 
-build/main.o:                     sDesktop/main.c                 ; $(CC) $(CFLAGS) -c $< -o $@
+build/main.o:                     sDesktop/main.c                 ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/libinclude -c $< -o $@
+build/pui.o:                      sDesktop/pui.c                  ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/libinclude -c $< -o $@
 build/log.o:                      sDesktop/log.c                  ; $(CC) $(CFLAGS) -c $< -o $@
 build/display/comp.o:             sDesktop/display/comp.c         ; $(CC) $(CFLAGS) -c $< -o $@
 build/display/fb_sulfur.o:        sDesktop/display/fb_sulfur.c    ; $(CC) $(CFLAGS) -c $< -o $@
 build/input/mouse.o:              sDesktop/input/mouse.c          ; $(CC) $(CFLAGS) -c $< -o $@
 build/input/keyboard.o:           sDesktop/input/keyboard.c       ; $(CC) $(CFLAGS) -c $< -o $@
-build/window/window.o:             sDesktop/window/window.c        ; $(CC) $(CFLAGS) -c $< -o $@
-build/wm/wm.o:                     sDesktop/wm/wm.c                ; $(CC) $(CFLAGS) -c $< -o $@
+build/window/window.o:            sDesktop/window/window.c        ; $(CC) $(CFLAGS) -c $< -o $@
+build/wm/wm.o:                    sDesktop/wm/wm.c                ; $(CC) $(CFLAGS) -c $< -o $@
+
+$(PUI_PARSER_LIB):
+	$(MAKE) -C $(PUI_PARSER)
 
 $(LIBC)/build/crt0.o $(LIBC)/build/libc.a:
 	$(MAKE) -C $(LIBC)

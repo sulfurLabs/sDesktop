@@ -8,10 +8,14 @@
 #
 
 CC := gcc
-CFLAGS := -Wall -Wextra -O2 -g -std=gnu11 -D__linux__ -Iinclude
+CFLAGS := -Wall -Wextra -O2 -g -std=gnu11 -D__linux__ -Iinclude     \
+          -IPyritUIparser/libinclude -IPyritUIparser/src
+
 LDFLAGS := -static
 
 BUILD := build-linux
+
+PUI_SRC := PyritUIparser/src
 
 OBJS := $(BUILD)/main.o              \
         $(BUILD)/log.o               \
@@ -20,17 +24,56 @@ OBJS := $(BUILD)/main.o              \
         $(BUILD)/input/mouse.o       \
         $(BUILD)/input/keyboard.o    \
         $(BUILD)/window/window.o     \
-        $(BUILD)/wm/wm.o
+        $(BUILD)/wm/wm.o             \
+        $(BUILD)/pui.o               \
+        $(BUILD)/pui-registry.o      \
+        $(BUILD)/pui-value.o         \
+        $(BUILD)/pui-builtin.o       \
+        $(BUILD)/pui-draw.o          \
+        $(BUILD)/pui-parse.o
 
 BIN := $(BUILD)/sDesktop-linux
 
 all: $(BIN)
+
+#console test
+PUI_TEST := $(BUILD)/pui-test
+PUI_TEST_OBJS := $(BUILD)/pui-test.o       \
+                 $(BUILD)/pui-registry.o   \
+                 $(BUILD)/pui-value.o      \
+                 $(BUILD)/pui-builtin.o    \
+                 $(BUILD)/pui-draw.o       \
+                 $(BUILD)/pui-parse.o
+
+pui-test: $(PUI_TEST)
+	./$(PUI_TEST)
+
+$(BUILD)/pui-test.o: PyritUIparser/tests/test.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(PUI_TEST): $(PUI_TEST_OBJS)
+	$(CC) $(LDFLAGS) $(PUI_TEST_OBJS) -o $@
 
 $(BIN): $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
 	@echo "linux desktop binary: $@"
 
 $(BUILD)/%.o: sDesktop/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+
+$(BUILD)/pui-registry.o: $(PUI_SRC)/registry.c
+$(BUILD)/pui-value.o:    $(PUI_SRC)/ui/value.c
+$(BUILD)/pui-builtin.o:  $(PUI_SRC)/ui/builtin.c
+$(BUILD)/pui-draw.o:     $(PUI_SRC)/ui/draw.c
+$(BUILD)/pui-parse.o:    $(PUI_SRC)/ui/parse.c
+
+$(BUILD)/pui-%.o:
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 

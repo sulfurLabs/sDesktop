@@ -9,7 +9,12 @@
 
 #pragma once
 
-#define DEBUGOUT 0
+#define DEBUGOUT 1
 #define DPI 144
 #define BILINEAL true
 //#define SCALE 2
+
+#ifdef __sulfur__
+    //sulfurOS doesnt have /home
+    #define PUI_DM_CONFIG "/users/pc/.config/desktop/desktop.pui"
+#endif

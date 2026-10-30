@@ -1,0 +1,12 @@
+Define Background argb(255, 0, 0, 80)
+//Define Background "$HOME/wallpapers/"
+
+//Styles
+Define TaskbarBackground argb(255, 80, 80, 80)
+Define TaskbarHeight 40px
+Define TaskbarButtonHeight TaskbarHeight
+Define WindowTitleHeight 20px
+Define WindowTitleColor argb(255, 90, 90, 90)
+
+//Default Applications
+Define DefaultTerminal "/bin/bash"
