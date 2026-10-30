@@ -35,7 +35,7 @@ OBJS := build/main.o \
         build/window/window.o \
         build/wm/wm.o
 
-PUI_PARSER := PyritUIparser
+PUI_PARSER := PyritUI
 PUI_PARSER_LIB := $(PUI_PARSER)/build/libpui-parser.a
 
 all: clean $(LIBC)/build/crt0.o dirs build/sDesktop.elf run
@@ -76,8 +76,8 @@ build/sDesktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a $(PUI
 	@cp build/sDesktop.cpio $(OS_DSK_PATH)rdh/user_id/extend/sDesktop.cpio
 
 
-build/main.o:                     sDesktop/main.c                 ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/libinclude -c $< -o $@
-build/pui.o:                      sDesktop/pui.c                  ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/libinclude -c $< -o $@
+build/main.o:                     sDesktop/main.c                 ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/parser/libinclude -c $< -o $@
+build/pui.o:                      sDesktop/pui.c                  ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/parser/libinclude -c $< -o $@
 build/log.o:                      sDesktop/log.c                  ; $(CC) $(CFLAGS) -c $< -o $@
 build/display/comp.o:             sDesktop/display/comp.c         ; $(CC) $(CFLAGS) -c $< -o $@
 build/display/fb_sulfur.o:        sDesktop/display/fb_sulfur.c    ; $(CC) $(CFLAGS) -c $< -o $@
