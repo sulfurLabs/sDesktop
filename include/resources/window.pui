@@ -23,7 +23,8 @@ SetContext(Window)
         Style(
             width(fill),
             height(fill),
-            padding(3px), //each side
+            //top right bottom left
+            padding(3px, 3px, 3px, 3px),
             bg(WindowTitleColor)
         )
     ){

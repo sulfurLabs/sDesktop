@@ -26,9 +26,13 @@ typedef struct
     //shared position with old data
     int x;
     int y;
+
+    //space a child can use
+    int w;
+    int h;
 } pui_Layout;
 
-//fill means the target size minus what got used already
+//fill means the space the parent has left
 static void NodeSize(const pui_Node *n, pui_Layout *l, int *w, int *h)
 {
     if (*w < 0)
@@ -36,10 +40,10 @@ static void NodeSize(const pui_Node *n, pui_Layout *l, int *w, int *h)
         //button fallback
         // this is not smart but a temporary solution
         if (strcmp(n->type, "Button") == 0) *w = PUI_BUTTON_W;
-        else *w = l->t->w - l->x;
+        else *w = l->w;
     }
 
-    if (*h < 0) *h = l->t->h - l->y;
+    if (*h < 0) *h = l->h;
 }
 
 static void DrawRect(pui_Layout *l, int x, int y, int w, int h, unsigned int color)
@@ -87,9 +91,30 @@ static void RenderNodes(pui_Node *n, pui_Layout *l)
         // like we need for taskbar
         if (n->anchorBottom) l->y = l->t->h - h;
         if (n->hasColor) DrawRect(l, l->x, l->y, w, h, n->color);
-        if (strcmp(n->type, "Button") == 0) l->x += w; //horizontal stack
+
+        //kids live inside the padding
+        int x = l->x;
+        int y = l->y;
+        int spaceW = l->w;
+        int spaceH = l->h;
+
+        l->x += n->paddingLeft;
+        l->y += n->paddingTop;
+        l->w = w - n->paddingLeft - n->paddingRight;
+        l->h = h - n->paddingTop - n->paddingBottom;
 
         RenderNodes(n->kids, l);
+
+        l->x = x;
+        l->y = y;
+        l->w = spaceW;
+        l->h = spaceH;
+
+        if (strcmp(n->type, "Button") == 0)
+        {
+            l->x += w; //horizontal stack
+            l->w -= w;
+        }
     }
 }
 
@@ -112,6 +137,8 @@ void pui_RenderTree(
     l.sh = sh;
     l.x = 0;
     l.y = 0;
+    l.w = t->w;
+    l.h = t->h;
 
     RenderNodes(root->kids, &l);
 }

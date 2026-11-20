@@ -581,6 +581,10 @@ int pui_LoadFile(const char *path)
     state.w = -1;
     state.h = -1;
     state.anchorBottom = 0;
+    state.paddingTop = 0;
+    state.paddingRight = 0;
+    state.paddingBottom = 0;
+    state.paddingLeft = 0;
     state.name[0] = '\0';
     state.hasColor = 0;
     state.color = 0;

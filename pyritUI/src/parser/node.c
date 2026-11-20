@@ -147,12 +147,20 @@ void pui_NodeUse(pui_Node *n)
     n->w = s->w;
     n->h = s->h;
     n->anchorBottom = s->anchorBottom;
+    n->paddingTop = s->paddingTop;
+    n->paddingRight = s->paddingRight;
+    n->paddingBottom = s->paddingBottom;
+    n->paddingLeft = s->paddingLeft;
     n->hasColor = s->hasColor;
     n->color = s->color;
 
     s->w = -1;
     s->h = -1;
     s->anchorBottom = 0;
+    s->paddingTop = 0;
+    s->paddingRight = 0;
+    s->paddingBottom = 0;
+    s->paddingLeft = 0;
     s->name[0] = '\0';
     s->hasColor = 0;
     s->color = 0;

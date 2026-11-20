@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "style.h"
+#include "../parser/lexer.h"
 #include "../parser/parse.h"
 #include "../parser/value.h"
 
@@ -22,6 +23,35 @@ static int Pixels(const char *args, int *out)
     if (!pui_ExpandArg(args, value, sizeof(value))) return 0;
 
     return pui_ValuePixels(value, out);
+}
+
+//the list is seperated by a comma
+static int PixelsNext(const char **args, int *out)
+{
+    char value[PUI_ARGS_MAX];
+    int len = 0;
+
+    while (pui_IsSpace((unsigned char)**args))
+    {
+        (*args)++;
+    }
+
+    while (**args && **args != ',')
+    {
+        if (len >= (int)sizeof(value) - 1) return 0;
+
+        value[len++] = **args;
+        (*args)++;
+    }
+
+    //trims the tail
+    while (len > 0 && pui_IsSpace((unsigned char)value[len - 1])) len--;
+
+    value[len] = '\0';
+
+    if (**args == ',') (*args)++;
+
+    return Pixels(value, out);
 }
 
 static int Value(const char *args, char *value, int max)
@@ -48,6 +78,32 @@ int pui_Height(const char *args, void *user)
 {
     (void)user;
     return Pixels(args, &pui_State()->h);
+}
+
+//padding(top, right, bottom, left)
+int pui_Padding(const char *args, void *user)
+{
+    (void)user;
+
+    pui_ParseState *s = pui_State();
+    int values[4];
+
+    if (!args) return 0;
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (!PixelsNext(&args, &values[i])) return 0;
+    }
+
+    while (pui_IsSpace((unsigned char)*args)) args++;
+    if (*args) return 0;
+
+    s->paddingTop = values[0];
+    s->paddingRight = values[1];
+    s->paddingBottom = values[2];
+    s->paddingLeft = values[3];
+
+    return 1;
 }
 
 int pui_Bg(const char *args, void *user)

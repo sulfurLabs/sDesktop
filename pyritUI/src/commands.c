@@ -39,6 +39,7 @@ static const pui_Cmd commands[] =
     { "ID",       pui_Name }, //for styles
     { "width",    pui_Width },
     { "height",   pui_Height },
+    { "padding",  pui_Padding },
     { "bg",       pui_Bg },
     { "anchor",   pui_Anchor },
     { "layout",   pui_Quiet },

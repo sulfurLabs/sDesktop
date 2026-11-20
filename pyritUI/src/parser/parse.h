@@ -29,6 +29,10 @@ typedef struct
     int w;
     int h;
     int anchorBottom;
+    int paddingTop;
+    int paddingRight;
+    int paddingBottom;
+    int paddingLeft;
     char name[PUI_NAME_MAX];
     int hasColor;
     unsigned int color;

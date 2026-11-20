@@ -29,6 +29,13 @@ typedef struct pui_Node
     int h;
     int anchorBottom;
 
+    //padding
+    // top right bottom left
+    int paddingTop;
+    int paddingRight;
+    int paddingBottom;
+    int paddingLeft;
+
     int hasColor;
     unsigned int color;
 
