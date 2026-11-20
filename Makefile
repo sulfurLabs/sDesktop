@@ -35,7 +35,7 @@ OBJS := build/main.o \
         build/window/window.o \
         build/wm/wm.o
 
-PUI_PARSER := PyritUI
+PUI_PARSER := pyritUI
 PUI_PARSER_LIB := $(PUI_PARSER)/build/libpui-parser.a
 
 all: clean $(LIBC)/build/crt0.o dirs build/sDesktop.elf run

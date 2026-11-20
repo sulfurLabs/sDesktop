@@ -15,7 +15,7 @@ LDFLAGS := -static
 
 BUILD := build-linux
 
-PUI_SRC := PyritUI/src
+PUI_SRC := pyritUI/src
 
 OBJS := $(BUILD)/main.o              \
         $(BUILD)/log.o               \
