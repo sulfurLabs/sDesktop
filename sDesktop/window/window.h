@@ -10,6 +10,8 @@
 #ifndef WINDOW_H
 #define WINDOW_H 1
 
+#include <pui.h>
+
 #include "../display/comp.h"
 
 #define WINDOW_MAX 32 //i dont think if a maximum is good lol
@@ -31,6 +33,10 @@ typedef struct
     int dy;
     int dw;
     int dh;
+
+    pui_Target uitarget; //has to stay alive
+                         //pyrit has the pointer
+    int uiId;
 } window_t;
 
 window_t *WindowCreate(int x, int y, int width, int height);

@@ -19,17 +19,25 @@ CFLAGS := -ffreestanding -nostdlib -fno-builtin -fno-stack-protector \
           -mno-mmx -mno-red-zone -Wall -Wextra -std=gnu11            \
           -I$(LIBC)/include -Ilibinclude -Isrc
 
-PARSER_SRCS := parser/src/registry.c     \
-        parser/src/ui/value.c     \
-        parser/src/ui/builtin.c   \
-        parser/src/ui/draw.c      \
-        parser/src/ui/parse.c
+PARSER_SRCS := src/parser/parse.c       \
+        src/parser/lexer.c              \
+        src/parser/node.c               \
+        src/parser/context.c            \
+        src/parser/value.c              \
+        src/parser/render.c             \
+        src/commands.c                  \
+        src/functions/container.c       \
+        src/functions/button.c          \
+        src/functions/label.c           \
+        src/functions/style.c           \
+        src/functions/misc.c            \
+        src/pui.c
 
-OBJS := $(PARSER_SRCS:parser/src/%.c=build/parse/%.o)
+OBJS := $(PARSER_SRCS:%.c=build/%.o)
 
 all: build/libpui-parser.a
 
-build/parse/%.o: parser/src/%.c | build
+build/%.o: %.c | build
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 

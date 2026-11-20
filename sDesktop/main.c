@@ -21,11 +21,15 @@
 #include "wm/wm.h"
 #include "window/window.h"
 
+#ifdef __sulfur
+    #include <sys/fb.h>
+#endif
+
 int main(void)
 {
     Log("starting sDesktop for " GREETER);
 
-    sleep(2); // i want to see output text
+    //sleep(2); // i want to see output text
 
     compositor_t comp;
 
@@ -71,6 +75,14 @@ int main(void)
         Log("could not start wm, continuing without it");
     }
 
+    //disables the sulfurOS VT screen output
+    #if defined(__sulfur__) || defined(PUIDEBUGOUT) && PUIDEBUGOUT == 1
+        ioctl(comp.fb.fd, FB_IOCTL_VT_DISABLE, 0);
+    #endif
+
+    PyritUILoad(NULL);
+    PyritUIDesktopAttach(&comp);
+
     //some demo windows
     window_t *win1 = WMCreateWindow(&wm, 150, 150, 300, 200);
     window_t *win2 = WMCreateWindow(&wm, 280, 280, 250, 150);
@@ -86,8 +98,6 @@ int main(void)
     WindowDrawRect(win2, 0, win2->height - 1, win2->width, 1, 0x00ffffff);
     WindowDrawRect(win2, 0, 0, 1, win2->height, 0x00ffffff);
     WindowDrawRect(win2, win2->width - 1, 0, 1, win2->height, 0x00ffffff);
-
-    PyritUILoad(&comp, win1);
 
     //default cursor
     MouseSetCursor(&cursor, CUR_NORMAL);
@@ -127,6 +137,11 @@ int main(void)
         haveMouse ? "ok" : "missing",
         haveKeyboard ? "ok" : "missing"
     );
+
+    //enables the VT screen output after PUI init is finished
+    #if defined(__sulfur__) || defined(PUIDEBUGOUT) && PUIDEBUGOUT == 1
+        ioctl(comp.fb.fd, FB_IOCTL_VT_ENABLE, 0);
+    #endif
 
     DesktopLoop: {
         #ifdef EVENT_DEBUG

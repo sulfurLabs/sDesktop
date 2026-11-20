@@ -9,10 +9,25 @@
 
 #include <string.h>
 
+#include <pui.h>
+
 #include "wm.h"
 #include "../log.h"
 
 static int next_id = 1;
+
+static void WindowUiSync(window_t *win)
+{
+    if (!win || !win->uiId) return;
+    win->uitarget = (pui_Target)
+    {
+        win->buffer,
+        win->x,
+        win->y,
+        win->width,
+        win->height
+    };
+}
 
 int WMInit(wm_t *wm, compositor_t *comp)
 {
@@ -32,6 +47,10 @@ void WMUnInit(wm_t *wm)
 
     for (int i = 0; i < wm->count; i++)
     {
+        //every ui instance drops when window is gone
+        pyrit.InstanceDrop(wm->windows[i]->uiId);
+        wm->windows[i]->uiId = 0;
+
         WindowDestroy(wm->windows[i]);
     }
 
@@ -50,6 +69,18 @@ window_t *WMCreateWindow(wm_t *wm, int x, int y, int width, int height)
     wm->windows[wm->count] = win;
     wm->count++;
 
+    //TODO:
+    // only have one universal function
+    // not Context and InstanceX
+    // this would be again to much specific to a desktop
+    win->uitarget = (pui_Target){ win->buffer, win->x, win->y, win->width, win->height };
+    win->uiId = pyrit.Instance("Window", &win->uitarget);
+
+    if (win->uiId)
+    {
+        pyrit.InstanceValue(win->uiId, "Window.title", "sDesktop");
+    }
+
     return win;
 }
 
@@ -61,6 +92,10 @@ void WMDestroyWindow(wm_t *wm, window_t *win)
     {
         if (wm->windows[i] == win)
         {
+            //ui instant is gone when window is destroyed
+            pyrit.InstanceDrop(win->uiId);
+            win->uiId = 0;
+
             WindowDestroy(win);
 
             for (int j = i; j < wm->count - 1; j++)
@@ -250,6 +285,8 @@ void WMHandleInput(wm_t *wm, const event_t *ev, int mx, int my)
             int ny = my - wm->drag_offy;
 
             WindowMove(win, nx, ny);
+            //the ui target needs to follow the window
+            WindowUiSync(win);
 
             if (wm->comp) CompDamage(wm->comp, oldx, oldy, win->width, win->height);
             if (wm->comp) CompDamage(wm->comp, win->x, win->y, win->width, win->height);

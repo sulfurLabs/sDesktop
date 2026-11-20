@@ -4,17 +4,61 @@
 // Copyright (c) 2026 sulfurLabs
 //
 // PROJECT: sDesktop
-// FILE: registry.c
+// FILE: commands.c
 //
 
-#include <pui.h>
-#include "ui/builtin.h"
-#include "ui/draw.h"
-#include "ui/parse.h"
-#include "ui/value.h"
-#include "registry.h"
 #include <stdlib.h>
 #include <string.h>
+
+#include "commands.h"
+
+//the command implementations live in functions/
+#include "parser/context.h"
+#include "functions/container.h"
+#include "functions/button.h"
+#include "functions/label.h"
+#include "functions/style.h"
+#include "functions/misc.h"
+
+typedef struct
+{
+    const char *name;
+    pui_Function fn;
+} pui_Cmd;
+
+//a list of all commands, like a documentation
+static const pui_Cmd commands[] =
+{
+    { "Container", pui_Container },
+    { "Button",    pui_Button },
+    { "Label",     pui_Label },
+    { "Style",     pui_Style },
+
+    //style properties
+    { "Name",     pui_Name },
+    { "ID",       pui_Name }, //for styles
+    { "width",    pui_Width },
+    { "height",   pui_Height },
+    { "bg",       pui_Bg },
+    { "anchor",   pui_Anchor },
+    { "layout",   pui_Quiet },
+    { "icon",     pui_Quiet },
+
+    //values
+    { "Define", pui_Define },
+    { "Bind",   pui_Bind },
+    { "GetArg", pui_Bind },
+    { "SetArg", pui_SetArg },
+
+    { "SetContext", pui_SetContext },
+    { "OnHover",    pui_OnHover },
+
+    //not finished yet
+    { "LoadImage",  pui_Quiet },
+    { "Image",      pui_Quiet },
+    { "Execute",    pui_Quiet },
+    { "tooltip",    pui_Quiet },
+};
 
 static pui_Entry functions[PUI_FUNCTIONS_MAX];
 static int functionCount;
@@ -26,7 +70,10 @@ int pui_Init(void)
     functionCount = 0;
     memset(functions, 0, sizeof(functions));
 
-    pui_RegisterBuiltins();
+    for (size_t i = 0; i < sizeof(commands) / sizeof(commands[0]); i++)
+    {
+        pui_RegisterFunction(commands[i].name, commands[i].fn, NULL);
+    }
 
     return 1;
 }
@@ -77,17 +124,15 @@ static pui_Entry *pui_Fill(
 int pui_RegisterFunction(const char *name, pui_Function fn, void *user)
 {
     if (!fn) return 0;
-
     return pui_Fill(name, fn, NULL, NULL, user) ? 1 : 0;
 }
 int pui_RegisterProperty(const char *name, pui_Get get, void *user)
 {
     if (!get) return 0;
-
     return pui_Fill(name, NULL, get, NULL, user) ? 1 : 0;
 }
 
-void pui_Context(const char *name, pui_Target *target)
+void pui_ContextTarget(const char *name, pui_Target *target)
 {
     pui_Fill(name, NULL, NULL, target, NULL);
 }
@@ -130,19 +175,3 @@ void pui_Unregister(const char *name)
         sizeof(pui_Entry)
     );
 }
-
-const struct pyrit pyrit =
-{
-    .Init = pui_Init,
-    .Context = pui_Context,
-    .RegisterFunction = pui_RegisterFunction,
-    .RegisterProperty = pui_RegisterProperty,
-    .Value = pui_Value,
-    .RunFunction = pui_RunFunction,
-    .ExpandArg = pui_ExpandArg,
-    .Unregister = pui_Unregister,
-    .SetContext = pui_SetContext,
-    .LoadFile = pui_LoadFile,
-    .Draw = pui_Draw,
-    .DrawDiag = pui_DrawDiag
-};

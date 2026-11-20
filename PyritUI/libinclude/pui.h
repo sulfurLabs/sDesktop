@@ -11,7 +11,6 @@
 
 #include <stdint.h>
 
-
 typedef int (*pui_Function)(const char *args, void *user);
 typedef const char *(*pui_Get)(void *user);
 
@@ -39,9 +38,16 @@ struct pyrit
     //default handler
     int (*SetContext)(const char *args, void *user);
     int (*LoadFile)(const char *path);
+
     void (*Draw)(int x, int y, int w, int h);
 
     void (*DrawDiag)(void);
+
+    int (*Instance)(const char *name, pui_Target *target);
+    void (*InstanceDrop)(int id);
+    int (*InstanceValue)(int id, const char *name, const char *value);
+
+    void (*Shutdown)(void);
 };
 
 //pyrit. prefix

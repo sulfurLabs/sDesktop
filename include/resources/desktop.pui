@@ -13,7 +13,8 @@ SetContext(Desktop)
             bg(Background)
         )
     ){
-        //Image(Background)
+        //                width, height
+        Image(Background, fill,  fill)
     }
 
     Container(
@@ -33,7 +34,24 @@ SetContext(Desktop)
             )
         ){
             OnHover(
-                tooltip("open Terminal"),
+                // won't work rn, just messing with the syntax
+                tooltip(
+                    "open Terminal",
+                    Style(
+                        width(108px),// 8 * 13 + 2 + 2
+                                     // 8 = font letter width
+                                     // 13 = 13 letters
+                                     // 2 = 2px padding left
+                                     // 2 = 2px padding right
+                        height(18px),// 16 + 1 + 1
+                                     // 16 = font letter height
+                                     // 1 = 1px padding left
+                                     // 1 = 1px padding right
+                        border(argb(255, 90, 90, 90), 1px),
+                        bg(argb(255, 75, 75, 75))
+                    )
+                ),
+                bg(argb(255, 45, 45, 45))
             )
             Image("/usr/share/applications/terminal.png"),
             Execute(DefaultTerminal)

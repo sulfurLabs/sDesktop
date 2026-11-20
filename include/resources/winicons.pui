@@ -1,0 +1,68 @@
+Import "config.pui"
+
+Define T 0x00000000
+Define B 0xFF101010
+Define W 0xFFD4D0C8
+
+Define WindowCloseMap {
+	B,B,B,B,B,B,B,B,B,B,B,B,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,B,W,W,W,W,W,B,W,W,B,
+	B,W,W,W,B,W,W,W,B,W,W,W,B,
+	B,W,W,W,W,B,W,B,W,W,W,W,B,
+	B,W,W,W,W,W,B,W,W,W,W,W,B,
+	B,W,W,W,W,B,W,B,W,W,W,W,B,
+	B,W,W,W,B,W,W,W,B,W,W,W,B,
+	B,W,W,B,W,W,W,W,W,B,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,B,B,B,B,B,B,B,B,B,B,B,B,
+}
+
+Define WindowMaximizeMap {
+	B,B,B,B,B,B,B,B,B,B,B,B,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,B,B,B,B,W,W,W,W,W,B,
+	B,W,W,B,W,W,W,W,W,W,W,W,B,
+	B,W,W,B,W,W,W,W,W,W,W,W,B,
+	B,W,W,B,W,W,W,W,W,B,W,W,B,
+	B,W,W,W,W,W,W,W,W,B,W,W,B,
+	B,W,W,W,W,W,W,W,W,B,W,W,B,
+	B,W,W,W,W,W,B,B,B,B,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,B,B,B,B,B,B,B,B,B,B,B,B,
+}
+Define WindowRestoreMap {
+	B,B,B,B,B,B,B,B,B,B,B,B,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,B,W,W,W,W,W,W,B,
+	B,W,W,W,W,B,W,W,W,W,W,W,B,
+	B,W,W,W,W,B,W,W,W,W,W,W,B,
+	B,W,B,B,B,B,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,B,B,B,B,W,B,
+	B,W,W,W,W,W,W,B,W,W,W,W,B,
+	B,W,W,W,W,W,W,B,W,W,W,W,B,
+	B,W,W,W,W,W,W,B,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,B,B,B,B,B,B,B,B,B,B,B,B,
+}
+
+Define WindowMinimizeMap {
+	B,B,B,B,B,B,B,B,B,B,B,B,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,B,B,B,B,B,B,B,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,W,W,W,W,W,W,W,W,W,W,W,B,
+	B,B,B,B,B,B,B,B,B,B,B,B,B,
+}

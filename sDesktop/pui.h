@@ -12,4 +12,5 @@
 #include "display/comp.h"
 #include "window/window.h"
 
-void PyritUILoad(compositor_t *comp, window_t *win);
+void PyritUILoad(const char *path);
+void PyritUIDesktopAttach(compositor_t *comp);

@@ -1,21 +1,40 @@
 Import "config.pui"
+Import "winicons.pui"
 
 SetContext(Window)
 {
+    //commented that out cuz idk if we really need to customize default window settings
     //defaults
-    SetArg(Window.height, "384")
-    SetArg(Window.width, "1280")
+    //SetArg(Window.height, "384")
+    //SetArg(Window.width, "1280")
 
-    SetArg(Window.title, "swindow")
+    //SetArg(Window.title, "swindow")
     SetArg(Window.drag.titleth, 20px) //titleth = dragable title from top, height is 20px
 
     // gets calculated into height and width
-    SetArg(Window.content.area,
+    SetArg(Window.content.area, Array(
         WindowTitleHeight, // top
-        1px, // right
-        1px, // bottom
-        1px  // left
-    )
+        3px, // right
+        3px, // bottom
+        3px  // left
+    ))
+
+    Container(
+        Style(
+            width(fill),
+            height(fill),
+            padding(3px), //each side
+            bg(WindowTitleColor)
+        )
+    ){
+        Container(
+            Style(
+                width(fill),
+                height(fill),
+                bg(WindowContentColor)
+            )
+        )
+    }
 
     Container(
         ID("window.decorations"),
@@ -30,5 +49,11 @@ SetContext(Window)
         // about the Window like the title or height, width or z-order,
         // we need the title for window decoration tho so we use Bind()
         Label(GetArg(Window.title))
+
+        Container(
+            ID("window.decorations.buttons")
+        ){
+            // idk how to solve bitmap drawing
+        }
     }
 }

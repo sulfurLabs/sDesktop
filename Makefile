@@ -11,7 +11,7 @@ CC   := x86_64-elf-gcc
 LD   := x86_64-elf-ld
 LIBC ?= include/libc
 
-OS_PATH     ?= ~/osdev/sulfurLabs/sulfurOSgcc/
+OS_PATH     ?= ~/dev/osdev/sulfurLabs/sulfurOS/
 OS_DSK_PATH ?= $(OS_PATH)dsk/
 ROOTFS_PATH ?= $(OS_DSK_PATH)rdh/user_id/applications/
 OS_LIBS     ?= $(OS_PATH)user/libs/
@@ -48,6 +48,10 @@ fetchDeps:
 		rm -rf include/sulfurOS; \
 	fi
 
+	if [ ! -d "include/resources" ]; then \
+		git clone --depth=1 https://github.com/emexthecat/sDesktop-exampletheme.git include/resources; \
+	fi
+
 dirs:
 	mkdir -p build
 	mkdir -p build/display
@@ -61,7 +65,7 @@ run:
 
 build/sDesktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a $(PUI_PARSER_LIB)
 	@echo "Building sDesktop now..."
-	$(LD) $(LDFLAGS) $(LIBC)/build/crt0.o $(OBJS) \
+	$(LD) $(LDFLAGS) $(LIBC)/build/crt0.o $(OBJS)         \
 		$(LIBC)/build/libc.a $(PUI_PARSER_LIB)            \
 		-o $@
 
@@ -76,15 +80,15 @@ build/sDesktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a $(PUI
 	@cp build/sDesktop.cpio $(OS_DSK_PATH)rdh/user_id/extend/sDesktop.cpio
 
 
-build/main.o:                     sDesktop/main.c                 ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/parser/libinclude -c $< -o $@
-build/pui.o:                      sDesktop/pui.c                  ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/parser/libinclude -c $< -o $@
+build/main.o:                     sDesktop/main.c                 ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/libinclude -c $< -o $@
+build/pui.o:                      sDesktop/pui.c                  ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/libinclude -c $< -o $@
 build/log.o:                      sDesktop/log.c                  ; $(CC) $(CFLAGS) -c $< -o $@
 build/display/comp.o:             sDesktop/display/comp.c         ; $(CC) $(CFLAGS) -c $< -o $@
 build/display/fb_sulfur.o:        sDesktop/display/fb_sulfur.c    ; $(CC) $(CFLAGS) -c $< -o $@
 build/input/mouse.o:              sDesktop/input/mouse.c          ; $(CC) $(CFLAGS) -c $< -o $@
 build/input/keyboard.o:           sDesktop/input/keyboard.c       ; $(CC) $(CFLAGS) -c $< -o $@
-build/window/window.o:            sDesktop/window/window.c        ; $(CC) $(CFLAGS) -c $< -o $@
-build/wm/wm.o:                    sDesktop/wm/wm.c                ; $(CC) $(CFLAGS) -c $< -o $@
+build/window/window.o:            sDesktop/window/window.c        ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/libinclude -c $< -o $@
+build/wm/wm.o:                    sDesktop/wm/wm.c                ; $(CC) $(CFLAGS) -I$(PUI_PARSER)/libinclude -c $< -o $@
 
 $(PUI_PARSER_LIB):
 	$(MAKE) -C $(PUI_PARSER)

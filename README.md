@@ -8,6 +8,10 @@
 -->
 
 # sDesktop - the sulfur Desktop
+NOTE: its still a very early version of this Desktop, i would 
+      not recommend to install it on your machine 
+      (which is possible, but i only tried on arch linux)
+      
 my desktop before was hard, unreadable and had a bad IPC/event system
 i want to start from 0 again and focuse more on performance
 and having a unified event system

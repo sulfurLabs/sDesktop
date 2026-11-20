@@ -1,0 +1,116 @@
+//test for nested/arguments
+Import "config.pui"
+
+SetContext(Overlay1)
+{
+    Container(
+        ID("hud.big"),
+        Style(
+            width(fill),
+            height(fill),
+            bg(Background)
+        )
+    ){}
+
+    //many args but stil under the arg max
+    Button(
+        ID("hud.list"),
+        Style(
+            height(TaskbarHeight),
+            width(TaskbarHeight),
+            height(TaskbarHeight),
+            width(TaskbarHeight),
+            height(TaskbarHeight),
+            width(TaskbarHeight),
+            height(TaskbarHeight),
+            width(TaskbarHeight),
+            height(TaskbarHeight),
+            width(TaskbarHeight),
+            height(TaskbarHeight),
+            width(TaskbarHeight),
+            height(TaskbarHeight),
+            width(TaskbarHeight),
+            height(TaskbarHeight),
+            width(TaskbarHeight),
+            height(TaskbarHeight),
+            width(TaskbarHeight),
+            height(TaskbarHeight),
+            width(TaskbarHeight),
+            bg(argb(255, 45, 45, 45))
+        )
+    )
+
+    Container(
+        ID("hud.after"),
+        Style(
+            width(fill),
+            height(40px),
+            bg(argb(255, 75, 75, 75))
+        )
+    )
+}
+
+//this time it doesnt fit into the nested buffer 256
+//so it just deletes this tooltip style
+Container(
+    ID("hud.hold"),
+    Style(
+        OnHover(
+            tooltip(
+                "the args of this call run over the buffer lol",
+                Style(
+                    y0(some(very(nested(args 0)))),
+                    y1(some(very(nested(args 1)))),
+                    y2(some(very(nested(args 2)))),
+                    y3(some(very(nested(args 3)))),
+                    y4(some(very(nested(args 4)))),
+                    y5(some(very(nested(args 5)))),
+                    y6(some(very(nested(args 6)))),
+                    y7(some(very(nested(args 7)))),
+                    y8(some(very(nested(args 8)))),
+                    y9(some(very(nested(args 9)))),
+                    y10(some(very(nested(args 10)))),
+                    y11(some(very(nested(args 11)))),
+                    y12(some(very(nested(args 12)))),
+                    y13(some(very(nested(args 13)))),
+                    y14(some(very(nested(args 14)))),
+                    y15(some(very(nested(args 15)))),
+                    y16(some(very(nested(args 16)))),
+                    y17(some(very(nested(args 17)))),
+                    y18(some(very(nested(args 18)))),
+                    y19(some(very(nested(args 19)))),
+                    y20(some(very(nested(args 20)))),
+                    y21(some(very(nested(args 21)))),
+                    y22(some(very(nested(args 22)))),
+                    y23(some(very(nested(args 23)))),
+                    y24(some(very(nested(args 24)))),
+                    y25(some(very(nested(args 25)))),
+                    y26(some(very(nested(args 26)))),
+                    y27(some(very(nested(args 27)))),
+                    y28(some(very(nested(args 28)))),
+                    y29(some(very(nested(args 29)))),
+                    y30(some(very(nested(args 30)))),
+                    y31(some(very(nested(args 31)))),
+                    y32(some(very(nested(args 32)))),
+                    y33(some(very(nested(args 33)))),
+                    y34(some(very(nested(args 34)))),
+                    y35(some(very(nested(args 35)))),
+                    y36(some(very(nested(args 36)))),
+                    y37(some(very(nested(args 37)))),
+                    y37(some(very(nested(args 38))))
+                )
+            ),
+            bg(argb(255, 45, 45, 45))
+        )
+        abcdefg(GetArg(Window.title))
+    )
+)
+
+Container(
+    ID("hud.after.two"),
+    Style(
+        width(fill),
+        height(20px),
+        bg(TaskbarBackground)
+    )
+)

@@ -4,13 +4,13 @@
 // Copyright (c) 2026 sulfurLabs
 //
 // PROJECT: sDesktop
-// FILE: registry.h
+// FILE: commands.h
 //
 
-#ifndef REGISTRY_H
-#define REGISTRY_H 1
+#ifndef COMMANDS_H
+#define COMMANDS_H 1
 
-#include "pui.h"
+#include <pui.h>
 #include "cfg.h"
 
 typedef struct
@@ -27,7 +27,7 @@ typedef struct
 int pui_Init(void);
 pui_Entry *pui_Find(const char *name);
 
-void pui_Context(const char *name, pui_Target *target);
+void pui_ContextTarget(const char *name, pui_Target *target);
 
 int pui_RegisterFunction(const char *name, pui_Function fn, void *user);
 int pui_RegisterProperty(const char *name, pui_Get get, void *user);
