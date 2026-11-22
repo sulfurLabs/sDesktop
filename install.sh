@@ -8,8 +8,30 @@
 
 set -eu
 
+# get the username to copy the resources
+if [ -n "${SUDO_USER:-}" ]; then
+    INSTALL_USER="$SUDO_USER"
+elif [ -n "${USER:-}" ] && [ "$USER" != "root" ]; then
+    INSTALL_USER="$USER"
+else
+    INSTALL_USER="$(logname 2>/dev/null || true)"
+fi
+
+if [ -z "$INSTALL_USER" ] || [ "$INSTALL_USER" = "root" ]; then
+    echo ":: error: could NOT find the normal user"
+    echo "          use sudo to run this script or specify a user"
+    exit 1
+fi
+
+INSTALL_HOME="$(awk -F: -v user="$INSTALL_USER" '$1 == user { print $6 }' /etc/passwd)"
+
+if [ -z "$INSTALL_HOME" ]; then
+    echo ":: error: could NOT find home directory for $INSTALL_USER"
+    exit 1
+fi
+
+CONFIG_DIR="$INSTALL_HOME/.config/desktop"
 RELEASE="https://github.com/sulfurLabs/sDesktop/releases/download/v0.1"
-CONFIG_DIR="$HOME/.config/desktop"
 BIN_DIR="/usr/local/bin" # !CHECK!
 INITTAB="/etc/inittab" # !CHECK!
 TMP_DIR="/tmp/sdesktop-install-$$"
@@ -28,7 +50,7 @@ download() {
     elif command -v busybox >/dev/null 2>&1; then
         busybox wget -q -O "$2" "$1"
     else
-        echo "error: curl or wget is required, please install it"
+        echo ":: error: curl or wget is required, please install it"
         exit 1
     fi
 }
@@ -39,7 +61,7 @@ extract() {
     elif command -v busybox >/dev/null 2>&1; then
         busybox unzip -o "$1" -d "$2"
     else
-        echo "error: unzip is required, please install it"
+        echo ":: error: unzip is required, please install it"
         exit 1
     fi
 }
@@ -92,10 +114,10 @@ if [ -f "$INITTAB" ]; then
         printf '\ntty1::respawn:/usr/local/bin/desktop-menu\n' >> "$INITTAB"
     fi
 else
-    echo "error: /etc/inittab wasn't found;"
-    echo "       may happend because your system is Older/Newer OR,"
-    echo "       is A AvoryOS Distribution OR,"
-    echo "       is NOT AvoryOS"
+    echo ":: error: /etc/inittab wasn't found;"
+    echo "          may happend because your system is Older/Newer OR,"
+    echo "          is A AvoryOS Distribution OR,"
+    echo "          is NOT AvoryOS"
     exit 1
 fi
 
