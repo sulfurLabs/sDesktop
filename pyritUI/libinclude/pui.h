@@ -22,6 +22,18 @@ typedef struct
     int w, h;
 } pui_Target;
 
+//per-render args
+typedef struct
+{
+    const char *name;
+    const char *value;
+} pui_Arg;
+typedef struct
+{
+    const pui_Arg *items;
+    size_t count;
+} pui_Args;
+
 struct pyrit
 {
     int (*Init)(void);

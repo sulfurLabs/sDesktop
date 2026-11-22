@@ -10,6 +10,8 @@
 #ifndef VALUE_H
 #define VALUE_H 1
 
+#include <pui.h>
+
 #include "../cfg.h"
 
 typedef struct
@@ -31,13 +33,23 @@ void pui_DefineClear(void);
 const char *pui_DefineGet(const char *name);
 const char *pui_DefineName(int index);
 const char *pui_DefineValue(int index);
-const char *pui_Lookup(const pui_Var *vars, int varCount, const char *name);
+
+int pui_LookupName(const char *start, const char *end, char *name, int max);
+const char *pui_Lookup(
+    const pui_Args *args,
+    const char *context,
+    const pui_Var *vars,
+    int varCount,
+    const char *name
+);
 
 int pui_DefineSet(const char *name, const char *value);
 int pui_DefineCount(void);
 
 int pui_ResolveLabel(
     const char *raw,
+    const pui_Args *args,
+    const char *context,
     const pui_Var *vars,
     int varCount,
     char *out,

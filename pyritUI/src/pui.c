@@ -31,6 +31,7 @@ typedef struct pui_Instance
     int id;
     pui_Target *target;
     pui_Node *tree;     //the "clone"
+    char context[PUI_NAME_MAX]; //context the clone came from
     pui_Var values[PUI_INSTANCE_VARS_MAX]; //values for a specific instance
     int valueCount;
 
@@ -100,6 +101,7 @@ int pui_InstanceNew(const char *name, pui_Target *target)
     memset(w, 0, sizeof(pui_Instance));
 
     w->target = target;
+    snprintf(w->context, sizeof(w->context), "%s", c->name);
     w->tree = pui_NodeClone(c->root);
     if (!w->tree)
     {
@@ -256,6 +258,8 @@ void pui_Draw(int x, int y, int w, int h)
 
 static void DumpNodes(
     const pui_Node *n,
+    const char *context,
+    const pui_Args *args,
     const pui_Var *values,
     int valueCount,
     int depth
@@ -285,15 +289,24 @@ static void DumpNodes(
         if (n->label)
         {
             char text[PUI_ARGS_MAX];
-            if (pui_ResolveLabel(n->label, values, valueCount, text, sizeof(text)))
-            {
+            if (
+                pui_ResolveLabel(
+                    n->label,
+                    args,
+                    context,
+                    values,
+                    valueCount,
+                    text,
+                    sizeof(text)
+                )
+            ){
                 printf(" label '%s'", text);
             }
         }
 
         printf("\n");
 
-        DumpNodes(n->kids, values, valueCount, depth + 2);
+        DumpNodes(n->kids, context, args, values, valueCount, depth + 2);
     }
 }
 
@@ -311,7 +324,7 @@ void pui_DrawDiag(void)
             printf("pui:   property %s.%s = %s\n", c->name, p->name, p->value);
         }
 
-        DumpNodes(c->root, NULL, 0, 2);
+        DumpNodes(c->root, c->name, NULL, NULL, 0, 2);
     }
     for (pui_Instance *w = instancesFirst; w; w = w->next)
     {
@@ -323,7 +336,7 @@ void pui_DrawDiag(void)
             w->target->x,
             w->target->y
         );
-        DumpNodes(w->tree, w->values, w->valueCount, 2);
+        DumpNodes(w->tree, w->context, NULL, w->values, w->valueCount, 2);
     }
 }
 

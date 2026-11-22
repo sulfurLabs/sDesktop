@@ -101,33 +101,18 @@ int pui_Define(const char *args, void *user)
     return 1;
 }
 
-//the current context owns the property of GetArg(name)
-static const char *ContextValue(const char *name)
-{
-    pui_Context *c = pui_State()->context;
-    size_t len;
-
-    if (!c || !name) return NULL;
-
-    len = strlen(c->name);
-
-    if (strncmp(name, c->name, len) != 0) return NULL;
-    if (name[len] != '.') return NULL;
-
-    return pui_ContextPropertyGet(c, name + len + 1);
-}
-
 //GetArg reads argument/value
 int pui_Bind(const char *args, void *user)
 {
     (void)user;
 
+    pui_Context *c;
     const char *val;
 
     if (!args) return 0;
 
-    val = ContextValue(args);
-    if (!val) val = pui_Lookup(NULL, 0, args);
+    c = pui_State()->context;
+    val = pui_Lookup(NULL, c ? c->name : NULL, NULL, 0, args);
 
     if (!val)
     {

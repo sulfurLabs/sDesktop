@@ -13,6 +13,8 @@
 #include <limits.h>
 
 #include "value.h"
+#include "context.h"
+#include "lexer.h"
 #include "commands.h"
 
 static pui_DefineEntry defines[PUI_DEFINES_MAX];
@@ -326,24 +328,130 @@ int pui_ExpandArg(const char *arg, char *out, int max)
     return (int)len;
 }
 
-const char *pui_Lookup(const pui_Var *vars, int varCount, const char *name)
+int pui_LookupName(const char *start, const char *end, char *name, int max)
 {
-    if (!name) return NULL;
+    if (!start || !end || !name || max <= 0 || end < start) return 0;
 
-    const char *val = pui_Value(name);
-    if (val) return val;
+    while (start < end && pui_IsSpace((unsigned char)*start)) start++;
+    while (end > start && pui_IsSpace((unsigned char)end[-1])) end--;
 
-    //the value a instance owns
-    for (int i = 0; i < varCount; i++)
+    if (start == end) return 0;
+    if ((size_t)(end - start) >= (size_t)max) return 0;
+
+    memcpy(name, start, (size_t)(end - start));
+    name[end - start] = '\0';
+
+    return 1;
+}
+
+//render args are ownered by caller
+static int ArgsValid(const pui_Args *args)
+{
+    if (!args) return 1;
+    if (args->count == 0) return 1;
+    if (!args->items) return 0;
+
+    for (size_t i = 0; i < args->count; i++)
     {
-        if (strcmp(vars[i].name, name) == 0) return vars[i].value;
+        const char *name = args->items[i].name;
+        const char *value = args->items[i].value;
+
+        if (!name || !value) return 0;
+        if (!name[0]) return 0;
+        if (strlen(name) >= PUI_NAME_MAX) return 0;
+
+        for (size_t j = 0; j < i; j++)
+        {
+            if (strcmp(args->items[j].name, name) == 0) return 0;
+        }
     }
 
+    return 1;
+}
+
+static const char *ArgsValue(const pui_Args *args, const char *name)
+{
+    if (!args || args->count == 0 || !args->items) return NULL;
+
+    for (size_t i = 0; i < args->count; i++)
+    {
+        if (strcmp(args->items[i].name, name) == 0)
+        {
+            return args->items[i].value;
+        }
+    }
+
+    return NULL;
+}
+
+//Window.title would be
+// the title of the Window
+static const char *ContextValue(const char *context, const char *name)
+{
+    pui_Context *c;
+    size_t len;
+
+    if (!context || !context[0] || !name) return NULL;
+
+    len = strlen(context);
+
+    if (strncmp(name, context, len) != 0) return NULL;
+    if (name[len] != '.') return NULL;
+    if (!name[len + 1]) return NULL;
+
+    c = pui_ContextFind(context);
+    if (!c) return NULL;
+
+    return pui_ContextPropertyGet(c, name + len + 1);
+}
+
+const char *pui_Lookup(
+    const pui_Args *args,
+    const char *context,
+    const pui_Var *vars,
+    int varCount,
+    const char *name
+){
+    char trimmed[PUI_NAME_MAX];
+    const char *val;
+
+    if (!name) return NULL;
+    if (!ArgsValid(args)) return NULL;
+
+    if (!pui_LookupName(name, name + strlen(name), trimmed, sizeof(trimmed)))
+    {
+        return NULL;
+    }
+
+    name = trimmed;
+
+    val = ArgsValue(args, name);
+    if (val) return val;
+
+    val = pui_Value(name);
+    if (val) return val;
+
+    //instance value / default copied
+    if (vars)
+    {
+        for (int i = 0; i < varCount; i++)
+        {
+            if (strcmp(vars[i].name, name) == 0) return vars[i].value;
+        }
+    }
+
+    //default context
+    val = ContextValue(context, name);
+    if (val) return val;
+
+    //global fallback
     return pui_DefineGet(name);
 }
 
 int pui_ResolveLabel(
     const char *raw,
+    const pui_Args *args,
+    const char *context,
     const pui_Var *vars,
     int varCount,
     char *out,
@@ -352,24 +460,32 @@ int pui_ResolveLabel(
     if (!raw || !out || max <= 0) return 0;
 
     const char *p = raw;
+    const char *limit;
+    const char *inner = NULL;
+    const char *val;
+    char name[PUI_NAME_MAX];
+
     while (*p == ' ' || *p == '\t') p++;
 
+    limit = p + strlen(p);
+    while (limit > p && pui_IsSpace((unsigned char)limit[-1])) limit--;
+
     //GetArg(name) or Bind(name) read from the live values
-    //TODO:
-    // again the brackets...
-    if (!strncmp(p, "GetArg(", 7) || !strncmp(p, "Bind(", 5))
+    if (limit - p >= 7 && !strncmp(p, "GetArg(", 7))
     {
-        const char *inner = strchr(p, '(') + 1;
-        const char *end = strrchr(inner, ')');
-        const char *val;
-        char name[PUI_NAME_MAX];
+        inner = p + 7;
+    }
+    else if (limit - p >= 5 && !strncmp(p, "Bind(", 5))
+    {
+        inner = p + 5;
+    }
 
-        if (!end || inner == end) return 0;
-        if ((int)(end - inner) >= PUI_NAME_MAX) return 0;
+    if (inner)
+    {
+        if (limit <= inner || limit[-1] != ')') return 0;
+        if (!pui_LookupName(inner, limit - 1, name, sizeof(name))) return 0;
 
-        memcpy(name, inner, (size_t)(end - inner));
-        name[end - inner] = '\0';
-        val = pui_Lookup(vars, varCount, name);
+        val = pui_Lookup(args, context, vars, varCount, name);
 
         if (!val) return 0;
         if ((int)strlen(val) >= max) return 0;
@@ -380,7 +496,7 @@ int pui_ResolveLabel(
     }
 
     //plain text or a define name
-    const char *val = pui_Value(p);
+    val = pui_Value(p);
     if (val)
     {
         if ((int)strlen(val) >= max) return 0;

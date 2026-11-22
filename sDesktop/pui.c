@@ -114,6 +114,15 @@ void PyritUILoad(const char *path)
         ){
             path = PyritUIPath;
         }
+        if (!access(PyritUIPath, F_OK))
+        {
+            path = PyritUIPath;
+        } else if (!access("/root/.config/desktop/desktop.pui", F_OK))
+        {
+            path = "/root/.config/desktop/desktop.pui";
+        } else
+            Log(":: error: could not find desktop.pui in $HOME or /root");
+        }
     }
 
     #ifdef __sulfur__
