@@ -35,6 +35,7 @@ const char *pui_DefineName(int index);
 const char *pui_DefineValue(int index);
 
 int pui_LookupName(const char *start, const char *end, char *name, int max);
+int pui_ArgsValid(const pui_Args *args);
 const char *pui_Lookup(
     const pui_Args *args,
     const char *context,

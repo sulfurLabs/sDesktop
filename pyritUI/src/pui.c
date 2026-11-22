@@ -239,6 +239,42 @@ int pui_RemoveProperty(const char *context, const char *name)
     return pui_ContextPropertyRemove(c, name);
 }
 
+//renders context directly from the tree
+// also nothing is saved after this function
+int pui_RenderContext(
+    const char *name,
+    pui_Target *target,
+    const pui_Args *args
+){
+    pui_Context *c;
+
+    if (!name || !name[0]) return 0;
+    if (strlen(name) >= PUI_NAME_MAX) return 0;
+    if (!target || !target->fp) return 0;
+    if (target->w <= 0 || target->h <= 0) return 0;
+
+    //reject bad args before any pixel gets touched
+    if (!pui_ArgsValid(args)) return 0;
+
+    c = pui_ContextFind(name);
+    if (!c || !c->root) return 0;
+
+    pui_RenderTree(
+        c->root,
+        target,
+        c->name,
+        args,
+        NULL,
+        0,
+        target->x,
+        target->y,
+        target->w,
+        target->h
+    );
+
+    return 1;
+}
+
 void pui_Draw(int x, int y, int w, int h)
 {
     for (pui_Context *c = pui_ContextFirst(); c; c = c->next)
@@ -247,12 +283,23 @@ void pui_Draw(int x, int y, int w, int h)
 
         if (!e || !e->target) continue;
 
-        pui_RenderTree(c->root, e->target, x, y, w, h);
+        pui_RenderTree(c->root, e->target, c->name, NULL, NULL, 0, x, y, w, h);
     }
 
     for (pui_Instance *win = instancesFirst; win; win = win->next)
     {
-        pui_RenderTree(win->tree, win->target, x, y, w, h);
+        pui_RenderTree(
+            win->tree,
+            win->target,
+            win->context,
+            NULL,
+            win->values,
+            win->valueCount,
+            x,
+            y,
+            w,
+            h
+        );
     }
 }
 
@@ -367,6 +414,7 @@ const struct pyrit pyrit =
     .SetContext = pui_SetContext,
     .LoadFile = pui_LoadFile,
     .Draw = pui_Draw,
+    .RenderContext = pui_RenderContext,
     .DrawDiag = pui_DrawDiag,
     .Instance = pui_InstanceNew,
     .InstanceDrop = pui_InstanceDrop,

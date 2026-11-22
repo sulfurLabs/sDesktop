@@ -23,7 +23,17 @@
     #define FB_DEV "/dev/fb0"
     #define MS_DEV "/dev/mouse"
     #define KB_DEV "/dev/kbd0"
+#elif __avory__
+    #include <fcntl.h>
+    #include <sys/mount.h>
+    #include <sys/stat.h>
+    #include <unistd.h>
 
+    #define GREETER "AvoryOS"
+
+    #define FB_DEV "/dev/dri/card0" //gpu
+    #define MS_DEV "/dev/input/event0"
+    #define KB_DEV "/dev/input/event1"
 #elif defined(__linux__)
     //linux specific code
     #include <linux/fb.h>

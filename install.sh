@@ -86,8 +86,8 @@ mkdir -p "$BIN_DIR"
 echo "=> downloading \"sDesktop-linux\"..."
 download "$RELEASE/sDesktop-linux" "$TMP_DIR/sDesktop-linux"
 
-echo "=> downloading \"desktop-menu\"..."
-download "$RELEASE/desktop-menu" "$TMP_DIR/desktop-menu"
+echo "=> downloading \"ADmenu\"..."
+download "$RELEASE/admenu" "$TMP_DIR/admenu"
 
 echo "=> downloading \"resources.zip\"..."
 download "$RELEASE/resources.zip" "$TMP_DIR/resources.zip"
@@ -99,9 +99,9 @@ chmod +x "$BIN_DIR/sDesktop-linux"
 echo "=> extracting \"resources\"..."
 extract "$TMP_DIR/resources.zip" "$CONFIG_DIR"
 
-echo "=> installing \"desktop-menu\"..." # or updating
-cp "$TMP_DIR/desktop-menu" "$BIN_DIR/desktop-menu"
-chmod +x "$BIN_DIR/desktop-menu"
+echo "=> installing \"ADmenu\"..." # or updating
+cp "$TMP_DIR/admenu" "$BIN_DIR/admenu"
+chmod +x "$BIN_DIR/admenu"
 
 echo "=> updating \"inittab\"..."
 
@@ -109,9 +109,9 @@ if [ -f "$INITTAB" ]; then
     cp "$INITTAB" "$INITTAB.bak"
 
     if grep -q '^tty1::respawn:' "$INITTAB"; then
-        sed -i 's|^tty1::respawn:.*|tty1::respawn:/usr/local/bin/desktop-menu|' "$INITTAB"
+        sed -i 's|^tty1::respawn:.*|tty1::respawn:/usr/local/bin/admenu|' "$INITTAB"
     else
-        printf '\ntty1::respawn:/usr/local/bin/desktop-menu\n' >> "$INITTAB"
+        printf '\ntty1::respawn:/usr/local/bin/admenu\n' >> "$INITTAB"
     fi
 else
     echo ":: error: /etc/inittab wasn't found;"
@@ -125,7 +125,7 @@ echo ""
 echo ":: sDesktop successfully installed :D"
 echo "   binary:    $BIN_DIR/sDesktop-linux"
 echo "   resources: $CONFIG_DIR/"
-echo "   menu:      $BIN_DIR/desktop-menu"
+echo "   menu:      $BIN_DIR/admenu"
 echo "   backup:    $INITTAB.bak"
 echo ""
-echo " > you can reboot, \"desktop-menu\" should automatically start"
+echo " > you can reboot, \"ADmenu\" should automatically start"

@@ -345,7 +345,7 @@ int pui_LookupName(const char *start, const char *end, char *name, int max)
 }
 
 //render args are ownered by caller
-static int ArgsValid(const pui_Args *args)
+int pui_ArgsValid(const pui_Args *args)
 {
     if (!args) return 1;
     if (args->count == 0) return 1;
@@ -416,7 +416,7 @@ const char *pui_Lookup(
     const char *val;
 
     if (!name) return NULL;
-    if (!ArgsValid(args)) return NULL;
+    if (!pui_ArgsValid(args)) return NULL;
 
     if (!pui_LookupName(name, name + strlen(name), trimmed, sizeof(trimmed)))
     {

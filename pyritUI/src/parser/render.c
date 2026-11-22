@@ -17,6 +17,12 @@
 typedef struct
 {
     pui_Target *t;
+
+    const char *context;
+    const pui_Args *args;
+    const pui_Var *values;
+    int valueCount;
+
     //the damage region on screen
     int sx;
     int sy;
@@ -78,7 +84,16 @@ static void DrawRect(pui_Layout *l, int x, int y, int w, int h, unsigned int col
     }
 }
 
-static void RenderNodes(pui_Node *n, pui_Layout *l)
+//TODO:
+// there is no font here yet
+// so it does nothing
+static void DrawLabel(pui_Layout *l, const char *text)
+{
+    (void)l;
+    (void)text;
+}
+
+static void RenderNodes(const pui_Node *n, pui_Layout *l)
 {
     for (; n; n = n->next)
     {
@@ -91,6 +106,26 @@ static void RenderNodes(pui_Node *n, pui_Layout *l)
         // like we need for taskbar
         if (n->anchorBottom) l->y = l->t->h - h;
         if (n->hasColor) DrawRect(l, l->x, l->y, w, h, n->color);
+
+        //labels r resolved while rendered
+        if (n->label)
+        {
+            char text[PUI_ARGS_MAX];
+
+            if (
+                pui_ResolveLabel(
+                    n->label,
+                    l->args,
+                    l->context,
+                    l->values,
+                    l->valueCount,
+                    text,
+                    sizeof(text)
+                )
+            ){
+                DrawLabel(l, text);
+            }
+        }
 
         //kids live inside the padding
         int x = l->x;
@@ -121,6 +156,10 @@ static void RenderNodes(pui_Node *n, pui_Layout *l)
 void pui_RenderTree(
     const pui_Node *root,
     pui_Target *t,
+    const char *context,
+    const pui_Args *args,
+    const pui_Var *values,
+    int valueCount,
     int sx,
     int sy,
     int sw,
@@ -129,8 +168,14 @@ void pui_RenderTree(
     pui_Layout l;
 
     if (!root || !t || !t->fp) return;
+    if (t->w <= 0 || t->h <= 0) return;
+    if (args && !pui_ArgsValid(args)) return;
 
     l.t = t;
+    l.context = context;
+    l.args = args;
+    l.values = values;
+    l.valueCount = valueCount;
     l.sx = sx;
     l.sy = sy;
     l.sw = sw;

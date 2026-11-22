@@ -20,6 +20,9 @@ echo "=> removing desktop files..."
 if [ -f "$BIN_DIR/sDesktop-linux" ]; then
     rm -f "$BIN_DIR/sDesktop-linux"
 fi
+if [ -f "$BIN_DIR/admenu" ]; then
+    rm -f "$BIN_DIR/admenu"
+fi
 if [ -f "$BIN_DIR/desktop-menu" ]; then
     rm -f "$BIN_DIR/desktop-menu"
 fi
@@ -37,10 +40,10 @@ if [ -f "$INITTAB.bak" ]; then
     rm -f "$INITTAB.bak"
 else
     echo ":: warning: inittab backup wasn't found"
-    echo ":: removing desktop-menu entry manually..."
+    echo ":: removing ADmenu entry manually..."
 
     if [ -f "$INITTAB" ]; then
-        sed -i '\|^tty1::respawn:/usr/local/bin/desktop-menu$|d' "$INITTAB"
+        sed -i '\|^tty1::respawn:/usr/local/bin/admenu$|d' "$INITTAB"
     fi
 fi
 

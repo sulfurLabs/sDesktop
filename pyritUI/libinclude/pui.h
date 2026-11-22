@@ -70,6 +70,14 @@ struct pyrit
     int (*InstanceValue)(int id, const char *name, const char *value);
 
     void (*Shutdown)(void);
+
+    //the old vtable needs to still work
+    // cuz i cant rewrite everything at once
+    int (*RenderContext)(
+        const char *name,
+        pui_Target *target,
+        const pui_Args *args
+    );
 };
 
 //pyrit. prefix

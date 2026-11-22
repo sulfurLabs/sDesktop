@@ -13,10 +13,15 @@
 #include <pui.h>
 
 #include "node.h"
+#include "value.h"
 
 void pui_RenderTree(
     const pui_Node *root,
     pui_Target *t,
+    const char *context,
+    const pui_Args *args,
+    const pui_Var *values,
+    int valueCount,
     int sx,
     int sy,
     int sw,
