@@ -266,6 +266,54 @@ static void ParseInclude(const char *doc, const char *name, char *cur, char **af
     }
 }
 
+//Define name {...} reads until the bracket
+// "{" wont count
+static char *ScanDefineBlock(char *start, char **end, int *closed)
+{
+    char *p = start;
+    int level = 0;
+    int quotes = 0;
+
+    *closed = 0;
+
+    while (*p)
+    {
+        if (*p == '"')
+        {
+            quotes = !quotes;
+        }
+        else if (*p == '\n')
+        {
+            quotes = 0;
+        }
+        else if (!quotes)
+        {
+            if (*p == '{')
+            {
+                level++;
+            }
+            else if (*p == '}')
+            {
+                level--;
+
+                if (level == 0)
+                {
+                    *end = p;
+                    *closed = 1;
+
+                    return p + 1;
+                }
+            }
+        }
+
+        p++;
+    }
+
+    *end = p;
+
+    return p;
+}
+
 static void ScanText(char *text)
 {
     char *cur = text;
@@ -431,8 +479,117 @@ static void ScanText(char *text)
         //Define name value needs no parens
         if (size == 6 && !strncmp(w, "Define", 6))
         {
-            char *line = strchr(cur, '\n');
+            char *p = cur;
+            char *nameStart;
+            char *brace;
+            char *line;
             char args[PUI_ARGS_MAX];
+            int nameLen;
+
+            while (*p == ' ' || *p == '\t') p++;
+
+            nameStart = p;
+            while (pui_IsNameChar((unsigned char)*p)) p++;
+
+            nameLen = (int)(p - nameStart);
+
+            brace = p;
+            while (pui_IsSpace((unsigned char)*brace)) brace++;
+
+            //Define name {...}
+            // whole block stays as a value
+            if (nameLen > 0 && *brace == '{')
+            {
+                char *end;
+                char *after;
+                char *vstart;
+                char *vend;
+                int closed;
+                int valueLen;
+
+                after = ScanDefineBlock(brace, &end, &closed);
+
+                if (!closed)
+                {
+                    printf(
+                        "pui: line %d: Define '%s' missing '}' in %s\n",
+                        RowOf(doc, brace),
+                        Snip(
+                            nameStart,
+                            nameLen,
+                            snip,
+                            sizeof(snip)
+                        ),
+                        state.file
+                    );
+
+                    //only eats its line the rest still parses
+                    line = strchr(brace, '\n');
+                    cur = line ? line : after;
+
+                    continue;
+                }
+
+                vstart = brace + 1;
+                vend = end;
+
+                while (vstart < vend && pui_IsSpace((unsigned char)*vstart)) vstart++;
+                while (vend > vstart && pui_IsSpace((unsigned char)vend[-1])) vend--;
+
+                valueLen = (int)(vend - vstart);
+
+                if (nameLen >= PUI_NAME_MAX)
+                {
+                    printf(
+                        "pui: line %d: Define name too long in %s\n",
+                        RowOf(doc, nameStart),
+                        state.file
+                    );
+
+                    cur = after;
+
+                    continue;
+                }
+
+                if (nameLen + 1 + valueLen >= PUI_ARGS_MAX)
+                {
+                    printf(
+                        "pui: line %d: Define too long in %s\n",
+                        RowOf(doc, brace),
+                        state.file
+                    );
+
+                    cur = after;
+
+                    continue;
+                }
+
+                memcpy(args, nameStart, (size_t)nameLen);
+                args[nameLen] = ' ';
+                memcpy(args + nameLen + 1, vstart, (size_t)valueLen);
+                args[nameLen + 1 + valueLen] = '\0';
+
+                if (!pui_RunFunction("Define", args))
+                {
+                    printf(
+                        "pui: line %d: Define '%s' is broken in %s\n",
+                        RowOf(doc, nameStart),
+                        Snip(
+                            nameStart,
+                            nameLen,
+                            snip,
+                            sizeof(snip)
+                        ),
+                        state.file
+                    );
+                }
+
+                cur = after;
+
+                continue;
+            }
+
+            line = strchr(cur, '\n');
 
             if (!line) line = cur + strlen(cur);
 
@@ -484,7 +641,8 @@ static void ScanText(char *text)
             state.file
         );
 
-        cur += size ? size : 1;
+        //the name scan already moved cur behind the token
+        if (!size) cur++;
     }
 
     scanDepth--;

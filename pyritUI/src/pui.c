@@ -42,26 +42,29 @@ static pui_Instance *instancesLast;
 static int instanceCount;
 static int nextInstanceId;
 
-//defines named after the context become instance values
-// like we have
-// SetContext(Window)
-// Define Window
-static void SeedValues(pui_Instance *w, const char *name)
+static void SeedValues(pui_Instance *w, pui_Context *c)
 {
-    int prelen = (int)strlen(name);
+    for (
+        pui_Property *p = c->properties;
+        p && w->valueCount < PUI_INSTANCE_VARS_MAX;
+        p = p->next
+    ) {
+        if (!p->name || !p->value) continue;
+        if (strlen(c->name) + 1 + strlen(p->name) >= PUI_NAME_MAX) continue;
 
-    for (int i = 0; i < pui_DefineCount() && w->valueCount < PUI_INSTANCE_VARS_MAX; i++)
-    {
-        const char *def = pui_DefineName(i);
-
-        if (!def || strncmp(def, name, (size_t)prelen) != 0) continue;
-        if (def[prelen] != '.' || !def[prelen + 1]) continue;
-
-        const char *val = pui_DefineValue(i);
-        if (!val) continue;
-
-        snprintf(w->values[w->valueCount].name, PUI_NAME_MAX, "%s", def);
-        snprintf(w->values[w->valueCount].value, PUI_ARGS_MAX, "%s", val);
+        snprintf(
+            w->values[w->valueCount].name,
+            PUI_NAME_MAX,
+            "%s.%s",
+            c->name,
+            p->name
+        );
+        snprintf(
+            w->values[w->valueCount].value,
+            PUI_ARGS_MAX,
+            "%s",
+            p->value
+        );
 
         w->valueCount++;
     }
@@ -105,7 +108,7 @@ int pui_InstanceNew(const char *name, pui_Target *target)
         return 0;
     }
 
-    SeedValues(w, c->name);
+    SeedValues(w, c);
 
     if (instancesLast) instancesLast->next = w;
     else instancesFirst = w;
@@ -187,6 +190,53 @@ int pui_InstanceValue(int id, const char *name, const char *value)
     return 0;
 }
 
+int pui_SetProperty(
+    const char *context,
+    const char *name,
+    const char *value
+){
+    pui_Context *c = pui_ContextFind(context);
+
+    if (!c) return 0;
+
+    return pui_ContextPropertySet(c, name, value);
+}
+
+int pui_GetProperty(
+    const char *context,
+    const char *name,
+    char *value,
+    size_t value_size
+){
+    pui_Context *c;
+    const char *property;
+    size_t len;
+
+    if (!value || !value_size) return 0;
+
+    c = pui_ContextFind(context);
+    if (!c) return 0;
+
+    property = pui_ContextPropertyGet(c, name);
+    if (!property) return 0;
+
+    len = strlen(property);
+    if (len >= value_size) return 0;
+
+    memcpy(value, property, len + 1);
+
+    return 1;
+}
+
+int pui_RemoveProperty(const char *context, const char *name)
+{
+    pui_Context *c = pui_ContextFind(context);
+
+    if (!c) return 0;
+
+    return pui_ContextPropertyRemove(c, name);
+}
+
 void pui_Draw(int x, int y, int w, int h)
 {
     for (pui_Context *c = pui_ContextFirst(); c; c = c->next)
@@ -255,6 +305,12 @@ void pui_DrawDiag(void)
     for (pui_Context *c = pui_ContextFirst(); c; c = c->next)
     {
         printf("pui: context '%s'\n", c->name);
+
+        for (pui_Property *p = c->properties; p; p = p->next)
+        {
+            printf("pui:   property %s.%s = %s\n", c->name, p->name, p->value);
+        }
+
         DumpNodes(c->root, NULL, 0, 2);
     }
     for (pui_Instance *w = instancesFirst; w; w = w->next)
@@ -292,6 +348,9 @@ const struct pyrit pyrit =
     .RunFunction = pui_RunFunction,
     .ExpandArg = pui_ExpandArg,
     .Unregister = pui_Unregister,
+    .SetProperty = pui_SetProperty,
+    .GetProperty = pui_GetProperty,
+    .RemoveProperty = pui_RemoveProperty,
     .SetContext = pui_SetContext,
     .LoadFile = pui_LoadFile,
     .Draw = pui_Draw,

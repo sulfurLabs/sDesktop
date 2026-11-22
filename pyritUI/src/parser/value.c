@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "value.h"
 #include "commands.h"
@@ -98,16 +99,43 @@ const char *pui_DefineValue(int index)
 //TODO:
 // sulflibc needs strtoul
 // remove this then
-static unsigned int ToUInt(const char *text)
+static int ParseUInt(const char **pp, unsigned int max, unsigned int *out)
 {
-    unsigned int out = 0;
+    const char *p = *pp;
+    unsigned int v = 0;
 
-    for (; *text >= '0' && *text <= '9'; text++)
+    if (*p < '0' || *p > '9') return 0;
+
+    while (*p >= '0' && *p <= '9')
     {
-        out = out * 10 + (unsigned int)(*text - '0');
+        unsigned int digit = (unsigned int)(*p - '0');
+
+        if (digit > max || v > (max - digit) / 10) return 0;
+
+        v = v * 10 + digit;
+        p++;
     }
 
-    return out;
+    *pp = p;
+    *out = v;
+
+    return 1;
+}
+
+static const char *SkipSpace(const char *p)
+{
+    while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
+
+    return p;
+}
+
+static int HexDigit(int c)
+{
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+
+    return -1;
 }
 
 int pui_ValueColor(const char *value, unsigned int *out)
@@ -116,9 +144,9 @@ int pui_ValueColor(const char *value, unsigned int *out)
 
     unsigned int slots[4];
     int want = 0;
-    int count = 0;
+    //int count = 0;
 
-    const char *p = value;
+    const char *p = SkipSpace(value);
 
     //TODO
     // bracket parser
@@ -132,28 +160,50 @@ int pui_ValueColor(const char *value, unsigned int *out)
         p += 4;
         want = 3;
     }
-
-    for (;;)
+    else if (p[0] == '0' && (p[1] == 'x' || p[1] == 'X'))
     {
-        if (*p >= '0' && *p <= '9')
+        const char *hex = p + 2;
+        int digits = 0;
+        unsigned int v = 0;
+
+        while (HexDigit((unsigned char)hex[digits]) >= 0) digits++;
+
+        //0xRRGGBB or 0xAARRGGBB but nothin else
+        if (digits != 6 && digits != 8) return 0;
+
+        for (int i = 0; i < digits; i++)
         {
-            if (count < 4) slots[count] = ToUInt(p);
-            count++;
-            while (*p >= '0' && *p <= '9') p++;
+            v = v << 4 | (unsigned int)HexDigit((unsigned char)hex[i]);
         }
 
-        if (*p == ',')
-        {
-            p++;
-            while (*p == ' ') p++;
-            continue;
-        }
+        p = SkipSpace(hex + digits);
+        if (*p) return 0;
 
-        break;
+        *out = digits == 6 ? 0xFF000000u | v : v;
+
+        return 1;
     }
 
-    if (count == want && count)
+    if (want)
     {
+        for (int i = 0; i < want; i++)
+        {
+            p = SkipSpace(p);
+            if (!ParseUInt(&p, 255, &slots[i])) return 0;
+            p = SkipSpace(p);
+
+            if (i + 1 < want)
+            {
+                if (*p != ',') return 0;
+                p++;
+            }
+        }
+
+        if (*p != ')') return 0;
+
+        p = SkipSpace(p + 1);
+        if (*p) return 0;
+
         unsigned int a = 255, r = slots[0], g = slots[1], b = slots[2];
 
         if (want == 4)
@@ -169,37 +219,62 @@ int pui_ValueColor(const char *value, unsigned int *out)
         return 1;
     }
 
-    if (!want && count == 1)
-    {
-        *out = 255u << 24 | slots[0] << 16 | slots[0] << 8 | slots[0];
+    unsigned int gray;
 
-        return 1;
-    }
+    if (!ParseUInt(&p, 255, &gray)) return 0;
 
-    return 0;
+    p = SkipSpace(p);
+    if (*p) return 0;
+
+    *out = 255u << 24 | gray << 16 | gray << 8 | gray;
+
+    return 1;
 }
 
 int pui_ValuePixels(const char *value, int *out)
 {
     if (!value || !out) return 0;
 
-    if (!strcmp(value, "fill"))
+    const char *p = SkipSpace(value);
+    unsigned int v;
+
+    if (!strncmp(p, "fill", 4))
     {
+        p = SkipSpace(p + 4);
+        if (*p) return 0;
+
         *out = -1;
+
         return 1;
     }
 
-    if (!strncmp(value, "px(", 3)) value += 3;
     //TODO:
     // yea... px( isnt a great solution, we need a function which automatically detects brackets etc
+    if (!strncmp(p, "px(", 3))
+    {
+        p = SkipSpace(p + 3);
+        if (!ParseUInt(&p, (unsigned int)INT_MAX, &v)) return 0;
+
+        p = SkipSpace(p);
+        if (*p != ')') return 0;
+
+        p = SkipSpace(p + 1);
+        if (*p) return 0;
+
+        *out = (int)v;
+
+        return 1;
+    }
 
     //plain digits have the px suffix
-    int end = 0;
+    if (!ParseUInt(&p, (unsigned int)INT_MAX, &v)) return 0;
 
-    while (value[end] >= '0' && value[end] <= '9') end++;
-    if (!end) return 0;
+    if (p[0] == 'p' && p[1] == 'x') p += 2;
 
-    *out = (int)ToUInt(value);
+    p = SkipSpace(p);
+    if (*p) return 0;
+
+    *out = (int)v;
 
     return 1;
 }

@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 typedef int (*pui_Function)(const char *args, void *user);
@@ -34,6 +35,15 @@ struct pyrit
     int (*ExpandArg)(const char *arg, char *out, int max);
 
     const char *(*Value)(const char *name);
+
+    int (*SetProperty)(const char *context, const char *name, const char *value);
+    int (*GetProperty)(
+        const char *context,
+        const char *name,
+        char *value,
+        size_t value_size
+    );
+    int (*RemoveProperty)(const char *context, const char *name);
 
     //default handler
     int (*SetContext)(const char *args, void *user);
