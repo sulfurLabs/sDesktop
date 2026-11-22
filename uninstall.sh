@@ -9,9 +9,12 @@ BIN_DIR="/usr/local/bin"
 INITTAB="/etc/inittab"
 
 if [ "$(id -u)" = "0" ]; then
-    printf "enter the username for \n"
-    printf "where to install: "
-    read -r INSTALL_USER
+    printf "enter a username for\n"
+    printf "where to uninstall: "
+    if ! read -r INSTALL_USER </dev/tty; then
+        echo ":: error: could NOT read username"
+        exit 1
+    fi
 else
     INSTALL_USER="$(id -un)"
 fi

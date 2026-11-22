@@ -36,6 +36,9 @@ typedef struct
     //space a child can use
     int w;
     int h;
+
+    //pixels per row
+    int stride;
 } pui_Layout;
 
 //fill means the space the parent has left
@@ -57,30 +60,33 @@ static void DrawRect(pui_Layout *l, int x, int y, int w, int h, unsigned int col
     pui_Target *t = l->t;
 
     //target rect in screen space
-    int tx = t->x + x;
-    int ty = t->y + y;
+    long long tx = (long long)t->x + x;
+    long long ty = (long long)t->y + y;
+    long long bx = tx + w;
+    long long by = ty + h;
 
-    int ix = l->sx > tx ? l->sx : tx;
-    int iy = l->sy > ty ? l->sy : ty;
-    int endx = l->sx + l->sw < tx + w ? l->sx + l->sw : tx + w;
-    int endy = l->sy + l->sh < ty + h ? l->sy + l->sh : ty + h;
+    long long ix = l->sx > tx ? l->sx : tx;
+    long long iy = l->sy > ty ? l->sy : ty;
+    long long endx = (long long)l->sx + l->sw < bx ? (long long)l->sx + l->sw : bx;
+    long long endy = (long long)l->sy + l->sh < by ? (long long)l->sy + l->sh : by;
 
     //target is a border itself
-    if (endx > t->x + t->w) endx = t->x + t->w;
-    if (endy > t->y + t->h) endy = t->y + t->h;
+    long long right = (long long)t->x + t->w;
+    long long bottom = (long long)t->y + t->h;
+    if (endx > right) endx = right;
+    if (endy > bottom) endy = bottom;
 
-    int w2 = endx - ix;
-    int h2 = endy - iy;
+    long long w2 = endx - ix;
+    long long h2 = endy - iy;
     if (w2 <= 0 || h2 <= 0) return;
 
-    for (int row = 0; row < h2; row++)
+    for (long long row = 0; row < h2; row++)
     {
         uint32_t *dst =
-            t->fp + (row + iy - t->y)  *
-            t->w + (ix - t->x)
+            t->fp + (row + iy - t->y) * l->stride + (ix - t->x)
         ;
 
-        for (int col = 0; col < w2; col++) dst[col] = color;
+        for (long long col = 0; col < w2; col++) dst[col] = color;
     }
 }
 
@@ -166,16 +172,24 @@ void pui_RenderTree(
     int sh
 ){
     pui_Layout l;
+    int stride;
 
     if (!root || !t || !t->fp) return;
     if (t->w <= 0 || t->h <= 0) return;
     if (args && !pui_ArgsValid(args)) return;
+
+    //old api has 0
+    if (t->stride < 0) return;
+
+    stride = t->stride ? t->stride : t->w;
+    if (stride < t->w) return;
 
     l.t = t;
     l.context = context;
     l.args = args;
     l.values = values;
     l.valueCount = valueCount;
+    l.stride = stride;
     l.sx = sx;
     l.sy = sy;
     l.sw = sw;

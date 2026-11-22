@@ -30,8 +30,7 @@ typedef struct pui_Instance
 {
     int id;
     pui_Target *target;
-    pui_Node *tree;     //the "clone"
-    char context[PUI_NAME_MAX]; //context the clone came from
+    char context[PUI_NAME_MAX]; //context the instance uses
     pui_Var values[PUI_INSTANCE_VARS_MAX]; //values for a specific instance
     int valueCount;
 
@@ -83,7 +82,7 @@ int pui_InstanceNew(const char *name, pui_Target *target)
     if (!target) return 0;
 
     c = pui_ContextFind(name);
-    if (!c || !c->root->kids)
+    if (!c || !c->root || !c->root->kids)
     {
         printf("pui: no '%s' context loaded\n", name ? name : "");
 
@@ -102,13 +101,6 @@ int pui_InstanceNew(const char *name, pui_Target *target)
 
     w->target = target;
     snprintf(w->context, sizeof(w->context), "%s", c->name);
-    w->tree = pui_NodeClone(c->root);
-    if (!w->tree)
-    {
-        free(w);
-
-        return 0;
-    }
 
     SeedValues(w, c);
 
@@ -138,8 +130,6 @@ void pui_InstanceDrop(int id)
 
             continue;
         }
-
-        pui_NodeFree(w->tree);
 
         *link = w->next;
         if (instancesLast == w)
@@ -253,6 +243,9 @@ int pui_RenderContext(
     if (!target || !target->fp) return 0;
     if (target->w <= 0 || target->h <= 0) return 0;
 
+    //needs a real stride
+    if (target->stride < target->w) return 0;
+
     //reject bad args before any pixel gets touched
     if (!pui_ArgsValid(args)) return 0;
 
@@ -288,10 +281,15 @@ void pui_Draw(int x, int y, int w, int h)
 
     for (pui_Instance *win = instancesFirst; win; win = win->next)
     {
+        pui_Context *c = pui_ContextFind(win->context);
+
+        //the context could be gone after reload
+        if (!c || !c->root) continue;
+
         pui_RenderTree(
-            win->tree,
+            c->root,
             win->target,
-            win->context,
+            c->name,
             NULL,
             win->values,
             win->valueCount,
@@ -375,6 +373,8 @@ void pui_DrawDiag(void)
     }
     for (pui_Instance *w = instancesFirst; w; w = w->next)
     {
+        pui_Context *c = pui_ContextFind(w->context);
+
         printf(
             "pui: instance %d %dx%d at %d,%d\n",
             w->id,
@@ -383,7 +383,15 @@ void pui_DrawDiag(void)
             w->target->x,
             w->target->y
         );
-        DumpNodes(w->tree, w->context, NULL, w->values, w->valueCount, 2);
+
+        if (!c || !c->root)
+        {
+            printf("pui:   context '%s' is gone\n", w->context);
+
+            continue;
+        }
+
+        DumpNodes(c->root, c->name, NULL, w->values, w->valueCount, 2);
     }
 }
 

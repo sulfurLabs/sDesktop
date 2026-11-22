@@ -20,6 +20,7 @@ typedef struct
     uint32_t *fp;
     int x, y;
     int w, h;
+    int stride;
 } pui_Target;
 
 //per-render args

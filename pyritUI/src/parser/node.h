@@ -45,7 +45,6 @@ typedef struct pui_Node
 
 pui_Node *pui_NodeCreate(const char *type);
 pui_Node *pui_NodeRoot(void);
-pui_Node *pui_NodeClone(const pui_Node *src);
 
 void pui_NodeUse(pui_Node *n);
 void pui_NodeFree(pui_Node *n);
