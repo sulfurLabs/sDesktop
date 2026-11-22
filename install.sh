@@ -8,13 +8,12 @@
 
 set -eu
 
-# get the username to copy the resources
-if [ -n "${SUDO_USER:-}" ]; then
-    INSTALL_USER="$SUDO_USER"
-elif [ -n "${USER:-}" ] && [ "$USER" != "root" ]; then
-    INSTALL_USER="$USER"
+if [ "$(id -u)" = "0" ]; then
+    printf "enter a username for\n"
+    printf "where to uninstall: "
+    read -r INSTALL_USER
 else
-    INSTALL_USER="$(logname 2>/dev/null || true)"
+    INSTALL_USER="$(id -un)"
 fi
 
 if [ -z "$INSTALL_USER" ] || [ "$INSTALL_USER" = "root" ]; then
@@ -25,7 +24,7 @@ fi
 
 INSTALL_HOME="$(awk -F: -v user="$INSTALL_USER" '$1 == user { print $6 }' /etc/passwd)"
 
-if [ -z "$INSTALL_HOME" ]; then
+if [ -z "$INSTALL_HOME" ] || [ ! -d "$INSTALL_HOME" ]; then
     echo ":: error: could NOT find home directory for $INSTALL_USER"
     exit 1
 fi
@@ -98,6 +97,7 @@ chmod +x "$BIN_DIR/sDesktop-linux"
 
 echo "=> extracting \"resources\"..."
 extract "$TMP_DIR/resources.zip" "$CONFIG_DIR"
+chown -R "$INSTALL_USER" "$CONFIG_DIR"
 
 echo "=> installing \"ADmenu\"..." # or updating
 cp "$TMP_DIR/admenu" "$BIN_DIR/admenu"
@@ -123,6 +123,7 @@ fi
 
 echo ""
 echo ":: sDesktop successfully installed :D"
+echo "   user:      $INSTALL_USER"
 echo "   binary:    $BIN_DIR/sDesktop-linux"
 echo "   resources: $CONFIG_DIR/"
 echo "   menu:      $BIN_DIR/admenu"
