@@ -48,7 +48,8 @@ cleanup() {
     rm -rf "$TMP_DIR"
 }
 
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
 
 echo "=> installing sDesktop..."
 
@@ -70,8 +71,8 @@ echo "=> downloading \"resources.zip\"..."
 download "$RELEASE/resources.zip" "$TMP_DIR/resources.zip"
 
 echo "=> installing desktop files..." # or updating
-cp "$TMP_DIR/sDesktop-linux" "$CONFIG_DIR/sDesktop-linux"
-chmod +x "$CONFIG_DIR/sDesktop-linux"
+cp "$TMP_DIR/sDesktop-linux" "$BIN_DIR/sDesktop-linux"
+chmod +x "$BIN_DIR/sDesktop-linux"
 
 echo "=> extracting \"resources\"..."
 extract "$TMP_DIR/resources.zip" "$CONFIG_DIR"
@@ -100,7 +101,7 @@ fi
 
 echo ""
 echo ":: sDesktop successfully installed :D"
-echo "   binary:    $CONFIG_DIR/sDesktop-linux"
+echo "   binary:    $BIN_DIR/sDesktop-linux"
 echo "   resources: $CONFIG_DIR/"
 echo "   menu:      $BIN_DIR/desktop-menu"
 echo "   backup:    $INITTAB.bak"
