@@ -170,6 +170,13 @@ int pui_SetArg(const char *args, void *user)
 
     if (!pui_ExpandArg(value, expanded, sizeof(expanded))) return 0;
 
+    if (pui_ValueIsArray(expanded))
+    {
+        pui_Array array;
+
+        if (!pui_ValueArray(expanded, &array)) return 0;
+    }
+
     return pui_ContextPropertySet(c, local, expanded);
 }
 

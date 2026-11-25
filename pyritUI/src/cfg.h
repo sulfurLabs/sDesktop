@@ -15,6 +15,7 @@
 #define PUI_PATH_MAX         256
 #define PUI_DEPTH_MAX          8 //nesting limit (define + include files)
 #define PUI_NEST_MAX          32
+#define PUI_ARRAY_MAX         32
 #define PUI_NODES_MAX        512
 #define PUI_INCLUDES_MAX      16
 #define PUI_SCAN_MAX           8 //nested args text depth

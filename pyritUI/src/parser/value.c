@@ -281,6 +281,128 @@ int pui_ValuePixels(const char *value, int *out)
     return 1;
 }
 
+//Array(WindowTitleHeight, 3px, 3px, 3px)
+// only name is checked, defines stay "raw"
+int pui_ValueIsArray(const char *value)
+{
+    const char *p;
+
+    if (!value) return 0;
+
+    p = SkipSpace(value);
+
+    if (strncmp(p, "Array", 5) != 0) return 0;
+
+    p = SkipSpace(p + 5);
+
+    return *p == '(';
+}
+
+//splits those raw elements from array
+// into different values
+int pui_ValueArray(const char *value, pui_Array *out)
+{
+    char args[PUI_ARGS_MAX];
+    const char *p;
+    const char *open;
+    const char *end;
+    const char *item;
+    char *after;
+    int fit;
+    int count = 0;
+    int level = 0;
+    int quoted = 0;
+
+    if (!value || !out) return 0;
+
+    out->count = 0;
+
+    //same limit the argument scanner uses
+    if (strlen(value) >= PUI_ARGS_MAX) return 0;
+
+    p = SkipSpace(value);
+
+    if (strncmp(p, "Array", 5) != 0) return 0;
+
+    open = SkipSpace(p + 5);
+    if (*open != '(') return 0;
+
+    //only reads docs
+    fit = pui_ScanCall((char *)(open + 1), &after, args, sizeof(args));
+    if (fit != 1) return 0;
+
+    end = after - 1;
+    if (end < open + 1) return 0;
+
+    p = SkipSpace(after);
+    if (*p) return 0;
+
+    item = open + 1;
+
+    //array with just spaces is just useless
+    if (SkipSpace(item) == end) return 1;
+
+    for (p = open + 1; p < end; p++)
+    {
+        if (*p == '"')
+        {
+            quoted = !quoted;
+        }
+        else if (!quoted)
+        {
+            if (*p == '(')
+            {
+                level++;
+            }
+            else if (*p == ')')
+            {
+                if (level == 0) return 0;
+
+                level--;
+            }
+            else if (*p == ',' && level == 0)
+            {
+                const char *start = SkipSpace(item);
+                const char *stop = p;
+
+                while (stop > start && pui_IsSpace((unsigned char)stop[-1])) stop--;
+
+                //empty elements r broken
+                if (start == stop) return 0;
+                if (count >= PUI_ARRAY_MAX) return 0;
+
+                out->items[count].start = start;
+                out->items[count].len = (int)(stop - start);
+                count++;
+
+                item = p + 1;
+            }
+        }
+    }
+
+    if (quoted || level != 0) return 0;
+
+    //last element
+    // (trailing comma leaves it empty)
+    {
+        const char *start = SkipSpace(item);
+        const char *stop = end;
+
+        while (stop > start && pui_IsSpace((unsigned char)stop[-1])) stop--;
+
+        if (start == stop) return 0;
+        if (count >= PUI_ARRAY_MAX) return 0;
+
+        out->items[count].start = start;
+        out->items[count].len = (int)(stop - start);
+        count++;
+    }
+
+    out->count = count;
+
+    return 1;
+}
+
 static int QuotedCopy(const char *text, size_t len, char *out, int max)
 {
     if (len < 2 || text[0] != '"' || text[len - 1] != '"') return 0;

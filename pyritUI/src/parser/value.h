@@ -27,6 +27,20 @@ typedef struct
     char value[PUI_ARGS_MAX];
 } pui_Var;
 
+//one raw element of Array(...)
+// the pointers stay inside the parsed string
+typedef struct
+{
+    const char *start;
+    int len;
+} pui_ArrayItem;
+
+typedef struct
+{
+    int count;
+    pui_ArrayItem items[PUI_ARRAY_MAX];
+} pui_Array;
+
 void pui_DefineDiag(void);
 void pui_DefineClear(void);
 
@@ -60,5 +74,7 @@ int pui_ResolveLabel(
 int pui_ExpandArg(const char *arg, char *out, int max);
 int pui_ValueColor(const char *value, unsigned int *out);
 int pui_ValuePixels(const char *value, int *out);
+int pui_ValueIsArray(const char *value);
+int pui_ValueArray(const char *value, pui_Array *out);
 
 #endif

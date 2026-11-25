@@ -71,8 +71,13 @@ static void DrawRect(pui_Layout *l, int x, int y, int w, int h, unsigned int col
     long long endy = (long long)l->sy + l->sh < by ? (long long)l->sy + l->sh : by;
 
     //target is a border itself
+    long long left = t->x;
+    long long top = t->y;
     long long right = (long long)t->x + t->w;
     long long bottom = (long long)t->y + t->h;
+
+    if (ix < left) ix = left;
+    if (iy < top) iy = top;
     if (endx > right) endx = right;
     if (endy > bottom) endy = bottom;
 

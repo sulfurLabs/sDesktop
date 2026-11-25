@@ -79,7 +79,10 @@ int pui_InstanceNew(const char *name, pui_Target *target)
     pui_Instance *w;
     pui_Context *c;
 
-    if (!target) return 0;
+    if (!target || !target->fp) return 0;
+    if (target->w <= 0 || target->h <= 0) return 0;
+    if (target->stride < 0) return 0;
+    if (target->stride && target->stride < target->w) return 0;
 
     c = pui_ContextFind(name);
     if (!c || !c->root || !c->root->kids)

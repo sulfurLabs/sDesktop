@@ -75,7 +75,7 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
 
-echo "=> installing sDesktop..."
+echo ":: installing sDesktop..."
 
 #TODO:
 # check if sDesktop is already installed
